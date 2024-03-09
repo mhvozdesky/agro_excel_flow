@@ -1,13 +1,14 @@
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from styles import Styles
 
 
 class AgroBook:
+    sheet_name = 'aggregate_yield'
 
-    def __init__(self):
-        self.wb = Workbook()
-        self.ws = self.get_ws()
-        self.num_rows = 1
+    def __init__(self, file_path=None):
+        self.wb = None
+        self.ws = None
+        self.num_rows = 0
         self.styles = Styles()
         self.columns = {
             'NN': {'type': 'handle', 'func': self.line_number, 'letter': 'A', 'width': 6.54},
@@ -36,11 +37,51 @@ class AgroBook:
             'Коментарі': {'type': 'handle', 'func': None, 'letter': 'X', 'width': 35.20}
         }
 
-        self.init_default_columns()
+        self.init_workbook(file_path)
 
     def get_ws(self):
         ws = self.wb.active
+        ws.title = self.sheet_name
         return ws
+
+    def get_ws_from_file(self, wb):
+        if self.sheet_name not in wb.sheetnames:
+            raise ValueError(f'Неправильна структура файла. Відсутній лист {self.sheet_name}')
+
+        ws = wb.get_sheet_by_name(self.sheet_name)
+        return ws
+
+    def check_file_structure(self):
+        default_column_list = list(self.columns.keys())
+        first_row = next(self.ws.iter_rows())
+        file_column = [cell.value for cell in first_row]
+
+        # the number of elements must be the same
+        not_enough_items = max(len(default_column_list) - len(file_column), 0)
+        file_column.extend([''] * not_enough_items)
+
+        for i, col_name in enumerate(default_column_list):
+            if col_name != file_column[i]:
+                raise ValueError(f'Неправильна структура файла. Проблема в назві колонки {i+1}')
+
+    def init_workbook(self, file_path):
+        if file_path is None:
+            self.wb = Workbook()
+            self.ws = self.get_ws()
+            self.num_rows = 1
+
+            self.init_default_columns()
+        else:
+            try:
+                self.wb = load_workbook(file_path)
+            except Exception:
+                print(f'Не вдалось відкрити файл {file_path}')
+                raise
+
+            self.ws = self.get_ws_from_file(self.wb)
+            self.num_rows = self.ws.max_row
+
+            self.check_file_structure()
 
     def init_default_columns(self):
         for column_name, data in self.columns.items():
@@ -106,6 +147,8 @@ class AgroBook:
     def state(self, row_dict):
         rel_col = 'State'
         value = row_dict.get(rel_col, '')
+        if value is None:
+            return None
         return value.replace('область', '').strip()
 
     def line_number(self, row_dict):
@@ -113,6 +156,8 @@ class AgroBook:
 
     def household(self, row_dict):
         value_row = row_dict.get('Custom trial name', '')
+        if value_row is None:
+            return None
         value = value_row.split(',')
         if len(value) >= 4:
             return value[3]
@@ -132,6 +177,10 @@ class AgroBook:
 
         latitude = row_dict.get('Latitude', None)
         latitude = self.format_coordinates(latitude)
+
+        if longitude == '' or latitude == '':
+            return None
+
         return f'{longitude},{latitude}'
 
     def get_not_none_value(self, col_name, row_dict):
