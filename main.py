@@ -105,9 +105,7 @@ def test():
 
 
 if __name__ == '__main__':
-    # input_file_list = [f'{DATA_DIR}/input_data/231010_UASESF88142023.xlsx']
-    # main(input_file_list)
-
-    print
+    input_file_list = [f'{DATA_DIR}/input_data/231010_UASESF88142023.xlsx']
+    main(input_file_list)
 
     # test()
