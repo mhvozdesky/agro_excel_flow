@@ -10,7 +10,7 @@ from PyQt6 import QtWidgets
 from styles import Styles
 from current_books import AgroBook
 from settings import DATA_DIR, FILE_NAME
-from ui.main_window import AgroMainWindow, Ui_MainWindow
+from ui.main_window import AgroMainWindow
 
 
 def get_wb(input_file):
