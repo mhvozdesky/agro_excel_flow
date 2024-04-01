@@ -1,15 +1,16 @@
 import os
 import os.path
+import sys
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Border, Side, Alignment
+from PyQt6.QtWidgets import QApplication
+from PyQt6 import QtWidgets
 
 from styles import Styles
 from current_books import AgroBook
-
-
-DATA_DIR = None
-FILE_NAME = 'Aggregate_Yield.xlsx'
+from settings import DATA_DIR, FILE_NAME
+from ui.main_window import AgroMainWindow, Ui_MainWindow
 
 
 def get_wb(input_file):
@@ -154,17 +155,34 @@ def test():
 
 
 if __name__ == '__main__':
-    data_dir = os.getenv('DATA_DIR', None)
-
-    dirpath, dirnames, filenames = next(os.walk(f'{data_dir}/input_data/'))
-    input_file_list = [f'{data_dir}/input_data/231010_UASESF88142023.xlsx']
-    # input_file_list = [f'{dirpath}{file_name}' for file_name in filenames if file_name.endswith('xlsx')]
-    
-    # find_element(input_file_list)
-
-    main_file = f'{data_dir}/Aggregate_Yield.xlsx'
-
-    main(file_list=input_file_list, dir_path=data_dir)
+    # data_dir = os.getenv('DATA_DIR', None)
+    #
+    # dirpath, dirnames, filenames = next(os.walk(f'{data_dir}/input_data/'))
+    # input_file_list = [f'{data_dir}/input_data/231010_UASESF88142023.xlsx']
+    # # input_file_list = [f'{dirpath}{file_name}' for file_name in filenames if file_name.endswith('xlsx')]
+    #
+    # # find_element(input_file_list)
+    #
+    # main_file = f'{data_dir}/Aggregate_Yield.xlsx'
+    #
+    # main(file_list=input_file_list, dir_path=data_dir)
     # main(file_list=input_file_list, file_path=main_file)
 
     # test()
+
+    with open('ui/style.gss') as style_file:
+        style_data = style_file.read()
+
+    app = QApplication(sys.argv)
+    app.setStyleSheet(style_data)
+
+    # MainWindow = QtWidgets.QMainWindow()
+    # ui = Ui_MainWindow()
+    # ui.setupUi(MainWindow)
+    # MainWindow.show()
+
+    window = AgroMainWindow()
+    window.show()
+
+
+    sys.exit(app.exec())
