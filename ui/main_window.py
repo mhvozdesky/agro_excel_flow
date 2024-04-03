@@ -1,37 +1,47 @@
-import sys
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QWidget, QPushButton, QApplication,
-    QGridLayout, QLabel, QLineEdit, QVBoxLayout, QHBoxLayout, QSizePolicy,
-    QCheckBox, QGroupBox, QRadioButton, QTextEdit, QPlainTextEdit,
-    QCalendarWidget, QComboBox, QSpinBox, QButtonGroup, QProgressBar, QSpacerItem,
-    QFrame
+    QWidget, QPushButton, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout,
+    QSizePolicy, QRadioButton, QTextEdit, QButtonGroup, QProgressBar,
+    QSpacerItem, QFrame
 )
-from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtGui import QFont, QFontDatabase, QTextCursor, QPixmap
-
-from datetime import datetime
+from PyQt6 import QtWidgets
+from PyQt6.QtGui import QFont
 
 from settings import VERSION
 
 
-class AgroMainWindow(QtWidgets.QWidget):
+class AgroMainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.progress_top_margin = 30
+
         self.setWindowTitle(f'Agro Flow v{VERSION}')
-        self.setContentsMargins(20, 20, 20, 20)
+        self.setContentsMargins(20, 0, 20, 20)
         self.resize(810, 790)
 
         main_layout = QVBoxLayout()
-        # main_layout.setContentsMargins(20, 20, 20, 20)
         self.setLayout(main_layout)
 
         self.layout_logo = QVBoxLayout()
         self.layout_grid = QGridLayout()
-        self.layout_processing = QVBoxLayout()
+        self.layout_processing = QHBoxLayout()
         self.layout_progres = QVBoxLayout()
         self.layout_logs = QVBoxLayout()
+
+        self.spacer_item_v = QSpacerItem(
+            20,
+            40,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding
+        )
+
+        self.spacer_item_h = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum
+        )
 
         main_layout.addLayout(self.layout_logo)
         main_layout.addLayout(self.layout_grid)
@@ -48,25 +58,21 @@ class AgroMainWindow(QtWidgets.QWidget):
         self.progressBar = QProgressBar()
         self.logs_edit = QTextEdit()
 
-        self.spacer_item = QSpacerItem(
-            20,
-            40,
-            QtWidgets.QSizePolicy.Policy.Minimum,
-            QtWidgets.QSizePolicy.Policy.Expanding
-        )
-
-        self.spacer_item2 = QtWidgets.QSpacerItem(
-            40,
-            20,
-            QtWidgets.QSizePolicy.Policy.Expanding,
-            QtWidgets.QSizePolicy.Policy.Minimum
-        )
-
         self.fill_layout_logo()
         self.fill_layout_grid()
         self.fill_layout_processing()
         self.fill_layout_progres()
         self.fill_layout_logs()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+
+        if self.height() <= 650:
+            delta = 650 - self.height()
+            new_value = max(self.progress_top_margin - delta, 0)
+            self.layout_progres.setContentsMargins(0, new_value, 0, 0)
+        else:
+            self.layout_progres.setContentsMargins(0, self.progress_top_margin, 0, 0)
 
     def get_frame(self):
         frame = QtWidgets.QFrame()
@@ -89,6 +95,7 @@ class AgroMainWindow(QtWidgets.QWidget):
 
     def fill_frame_culture(self):
         frame = self.get_frame()
+        frame.setFixedHeight(151)
 
         frame_layout = self.get_frame_layout()
 
@@ -113,10 +120,10 @@ class AgroMainWindow(QtWidgets.QWidget):
         layout_culture_radio.addWidget(radio_sunflower, 0, 0)
         layout_culture_radio.addWidget(radio_rapeseed, 0, 1)
         layout_culture_radio.addWidget(radio_corn, 1, 0)
-        layout_culture_radio.addItem(self.spacer_item2)
+        layout_culture_radio.addItem(self.spacer_item_h)
 
         frame_layout.addLayout(layout_culture_radio)
-        frame_layout.addItem(self.spacer_item)
+        frame_layout.addItem(self.spacer_item_v)
 
         frame.setLayout(frame_layout)
 
@@ -124,6 +131,7 @@ class AgroMainWindow(QtWidgets.QWidget):
 
     def fill_frame_operations(self):
         frame = self.get_frame()
+        frame.setFixedHeight(151)
         frame_layout = self.get_frame_layout()
 
         layout_operations = QHBoxLayout()
@@ -138,7 +146,7 @@ class AgroMainWindow(QtWidgets.QWidget):
         button_operation = QPushButton('Обрати папку')
         button_operation.setFixedSize(121, 35)
         button_operation.setProperty('class', 'button_operation')
-        label = QLabel('/home/maks_gv')
+        label = QLabel('Папку не вибрано')
         label.setFont(self.font)
         label.setProperty('class', 'label_file')
 
@@ -150,37 +158,43 @@ class AgroMainWindow(QtWidgets.QWidget):
 
         layout_operations.addWidget(radio_new_file)
         layout_operations.addWidget(radio_exist_file)
-        layout_operations.addItem(self.spacer_item2)
+        layout_operations.addItem(self.spacer_item_h)
 
         frame_layout.addLayout(layout_operations)
         frame_layout.addWidget(button_operation)
         frame_layout.addWidget(label)
 
-        frame_layout.addItem(self.spacer_item)
+        frame_layout.addItem(self.spacer_item_v)
 
         frame.setLayout(frame_layout)
         self.layout_grid.addWidget(frame, 0, 1)
 
     def fill_input_button(self):
         frame = self.get_frame()
+        frame.setFixedHeight(101)
         frame_layout = self.get_frame_layout()
 
         title = QLabel('Вхідні дані')
         button = QPushButton('Обрати')
+        button.setFixedSize(89, 35)
+        button.setProperty('class', 'button_input')
 
         frame_layout.addWidget(title)
         frame_layout.addWidget(button)
+        frame_layout.addItem(self.spacer_item_v)
 
         frame.setLayout(frame_layout)
+
         self.layout_grid.addWidget(frame, 1, 0)
 
     def fill_input_files(self):
         frame = self.get_frame()
+        frame.setFixedHeight(101)
         frame_layout = QVBoxLayout()
         frame_layout.setContentsMargins(0, 0, 0, 0)
 
         text_edit = QTextEdit()
-        # text_edit.setReadOnly(True)
+        text_edit.setReadOnly(True)
         text_edit.setFont(self.font)
         text_edit.setText('Файлів не вибрано')
 
@@ -199,53 +213,34 @@ class AgroMainWindow(QtWidgets.QWidget):
         self.layout_grid.setColumnStretch(0, 1)  # The first column
         self.layout_grid.setColumnStretch(1, 1)  # The second column
 
-        self.layout_grid.setRowStretch(0, 4)
-        self.layout_grid.setRowStretch(1, 3)
+        self.layout_grid.setHorizontalSpacing(19)
+        self.layout_grid.setVerticalSpacing(19)
 
     def fill_layout_processing(self):
         button = QPushButton('Обробка даних')
-        self.layout_processing.addWidget(button)
+        button.setFixedSize(151, 41)
+
+        self.layout_processing.addWidget(button, alignment=Qt.AlignmentFlag.AlignRight)
+
+        self.layout_processing.setContentsMargins(0, 10, 0, 0)
 
     def fill_layout_progres(self):
         self.progressBar.setProperty('value', 24)
+        self.progressBar.setProperty('class', 'progress_bar')
         self.progressBar.setTextVisible(False)
         self.layout_progres.addWidget(self.progressBar)
+
+        self.layout_progres.setContentsMargins(0, 30, 0, 0)
 
     def fill_layout_logs(self):
         frame = self.get_frame()
         frame_layout = QVBoxLayout()
         frame_layout.setContentsMargins(0, 0, 0, 0)
 
-        # self.logs_edit.setReadOnly(True)
+        self.logs_edit.setReadOnly(True)
         self.logs_edit.setFont(self.font)
-        self.logs_edit.setText('Файлів не вибрано')
 
         frame_layout.addWidget(self.logs_edit)
 
         frame.setLayout(frame_layout)
         self.layout_logs.addWidget(frame)
-
-
-# class Ui_MainWindow(object):
-#     def setupUi(self, MainWindow):
-#         MainWindow.setWindowTitle(f'Agro Flow v{VERSION}')
-#         MainWindow.setContentsMargins(20, 20, 20, 20)
-#         MainWindow.resize(810, 790)
-#
-#         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
-#         self.centralwidget.setObjectName("centralwidget")
-#
-#         self.main_layout = QVBoxLayout()
-#         self.centralwidget.setLayout(self.main_layout)
-#
-#         self.frame_6 = QtWidgets.QFrame()
-#         self.frame_6.setGeometry(QtCore.QRect(30, 10, 190, 60))
-#         self.frame_6.setStyleSheet("")
-#         self.frame_6.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
-#         self.frame_6.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
-#         self.frame_6.setObjectName("frame_6")
-#         self.frame_6.setProperty('class', 'logo')
-#
-#         self.main_layout.addWidget(self.frame_6)
-#
-#         MainWindow.setCentralWidget(self.centralwidget)

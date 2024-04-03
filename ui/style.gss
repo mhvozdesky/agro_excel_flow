@@ -1,51 +1,51 @@
 QWidget
 {
-	background-color: #DADFE9;
-	color: #14332B;
-	selection-background-color: #b78620;
-	selection-color: #000;
+    background-color: #DADFE9;
+    color: #14332B;
+    selection-background-color: #b78620;
+    selection-color: #000;
 }
 
 /*-----QLabel-----*/
 QLabel
 {
-	background-color: transparent;
-	color: #14332B;
+    background-color: transparent;
+    color: #14332B;
 }
 
 /*-----QPushButton-----*/
 QPushButton
 {
-	background-color: #269C52;
-	color: #ffffff;
-	min-width: 80px;
-	border-style: solid;
-	border-width: 1px;
-	border-radius: 3px;
-	border-color: #0C652E;
-	padding: 5px;
+    background-color: #269C52;
+    color: #ffffff;
+    /*min-width: 80px;*/
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: #0C652E;
+    padding: 5px;
     border: none;
 }
 
 QPushButton::hover
 {
-	background-color: #218747;
+    background-color: #218747;
 }
 
 QPushButton::pressed
 {
-	background-color: #20583f;
+    background-color: #20583f;
 
 }
 
 /*-----QLineEdit-----*/
 QLineEdit
 {
-	background-color: #FFFFFF;
-	border: 1px solid #0C652E;
-	border-radius: 2px;
-	padding: 3px;
-	padding-left: 5px;
+    background-color: #FFFFFF;
+    border: 1px solid #0C652E;
+    border-radius: 2px;
+    padding: 3px;
+    padding-left: 5px;
 }
 
 /*-----QRadioButton-----*/
@@ -59,13 +59,13 @@ QRadioButton::indicator {
 QRadioButton::indicator::checked {
     image: url(ui/images/radio/checked.svg);
     width: 16px;
-	height: 16px;
+    height: 16px;
 }
 
 QRadioButton::indicator::unchecked {
     image: url(ui/images/radio/unchecked.svg);
     width: 16px;
-	height: 16px;
+    height: 16px;
 }
 
 /*-----QScrollBar-----*/
@@ -73,7 +73,7 @@ QScrollBar:vertical
 {
     background-color: #DADFE9;
     width: 10px;
-	border: 1px solid #b5bfd4;
+    border: 1px solid #b5bfd4;
     margin: 0px 0px 0px 0px;
     border-radius: 3px;
     border: none;
@@ -95,8 +95,8 @@ QScrollBar::handle:vertical:hover {
 
 QScrollBar::sub-line:vertical
 {
-	background-color: #d0d4dd;
-	border: 1px solid #76787b;
+    background-color: #d0d4dd;
+    border: 1px solid #76787b;
     height: 15px;
     subcontrol-position: top;
     subcontrol-origin: margin;
@@ -107,8 +107,8 @@ QScrollBar::sub-line:vertical
 
 QScrollBar::add-line:vertical
 {
-	background-color: #d0d4dd;
-	border: 1px solid #76787b;
+    background-color: #d0d4dd;
+    border: 1px solid #76787b;
     height: 15px;
     subcontrol-position: bottom;
     subcontrol-origin: margin;
@@ -123,8 +123,8 @@ QProgressBar
 {
     border: 1px solid #b5bfd4;
     text-align: center;
-	color: #000;
-	font-weight: bold;
+    color: #000;
+    font-weight: bold;
 }
 
 
@@ -179,4 +179,12 @@ QTextEdit
 
 .radio_corn {
     margin-top: 10px;
+}
+
+.button_input {
+    margin-top: 10px;
+}
+
+.progress_bar {
+    height: 16px;
 }

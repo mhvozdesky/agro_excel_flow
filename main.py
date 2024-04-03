@@ -176,13 +176,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyleSheet(style_data)
 
-    # MainWindow = QtWidgets.QMainWindow()
-    # ui = Ui_MainWindow()
-    # ui.setupUi(MainWindow)
-    # MainWindow.show()
-
     window = AgroMainWindow()
     window.show()
-
 
     sys.exit(app.exec())
