@@ -38,6 +38,14 @@ QPushButton::pressed
 
 }
 
+QPushButton::disabled
+{
+	background-color: #959595;
+	color: #656565;
+	border-color: #051a39;
+
+}
+
 /*-----QLineEdit-----*/
 QLineEdit
 {
@@ -67,6 +75,16 @@ QRadioButton::indicator::unchecked {
     width: 16px;
     height: 16px;
 }
+
+QRadioButton::indicator::disabled {
+    image: url(ui/images/radio/disabled.svg);
+}
+
+QRadioButton::disabled {
+    color: #656565;
+}
+
+/* ::disabled */
 
 /*-----QScrollBar-----*/
 QScrollBar:vertical

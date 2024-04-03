@@ -1,3 +1,4 @@
+import os.path
 from enum import Enum
 
 from PyQt6.QtCore import Qt
@@ -74,6 +75,8 @@ class AgroMainWindow(QWidget):
         self.crops_group = QButtonGroup()
         self.operation_group = QButtonGroup()
         self.label_dir_file = QLabel('Папку не вибрано')
+        self.input_files_text_edit = QTextEdit()
+        self.processing_button = QPushButton('Обробка даних')
 
         self.font = QFont()
         self.font.setPointSize(8)
@@ -151,10 +154,12 @@ class AgroMainWindow(QWidget):
         radio_rapeseed = QRadioButton(CropsRadio.rapeseed.value)
         radio_rapeseed.setProperty('name', CropsRadio.rapeseed.name)
         radio_rapeseed.setProperty('class', 'last_radio')
+        radio_rapeseed.setDisabled(True)
 
         radio_corn = QRadioButton(CropsRadio.corn.value)
         radio_corn.setProperty('name', CropsRadio.corn.name)
         radio_corn.setProperty('class', 'radio_corn')
+        radio_corn.setDisabled(True)
 
         self.crops_group.addButton(radio_sunflower)
         self.crops_group.addButton(radio_rapeseed)
@@ -302,18 +307,39 @@ class AgroMainWindow(QWidget):
 
         self.layout_grid.addWidget(frame, 1, 0)
 
+        button.clicked.connect(self.select_input_files)
+
+    def display_input_files(self, file_paths):
+        self.input_files_text_edit.setText('')
+
+        name_list = [os.path.split(file_path)[1] for file_path in file_paths]
+        name_for_display = '\n'.join(name_list)
+        self.input_files_text_edit.setPlainText(name_for_display)
+
+    def select_input_files(self):
+        self.processing_button.setDisabled(True)
+        file_paths, _ = QtWidgets.QFileDialog.getOpenFileNames(
+            self,
+            'Відкрити файли',
+            '',
+            'Excel Files (*.xlsx *.xls);;All Files (*)'
+        )
+        if file_paths:
+            self.file_path = file_paths
+            self.display_input_files(file_paths)
+        self.processing_button.setDisabled(False)
+
     def fill_input_files(self):
         frame = self.get_frame()
         frame.setFixedHeight(101)
         frame_layout = QVBoxLayout()
         frame_layout.setContentsMargins(0, 0, 0, 0)
 
-        text_edit = QTextEdit()
-        text_edit.setReadOnly(True)
-        text_edit.setFont(self.font)
-        text_edit.setText('Файлів не вибрано')
+        self.input_files_text_edit.setReadOnly(True)
+        self.input_files_text_edit.setFont(self.font)
+        self.input_files_text_edit.setText('Файлів не вибрано')
 
-        frame_layout.addWidget(text_edit)
+        frame_layout.addWidget(self.input_files_text_edit)
 
         frame.setLayout(frame_layout)
         self.layout_grid.addWidget(frame, 1, 1)
@@ -332,10 +358,11 @@ class AgroMainWindow(QWidget):
         self.layout_grid.setVerticalSpacing(19)
 
     def fill_layout_processing(self):
-        button = QPushButton('Обробка даних')
-        button.setFixedSize(151, 41)
+        self.processing_button.setFixedSize(151, 41)
 
-        self.layout_processing.addWidget(button, alignment=Qt.AlignmentFlag.AlignRight)
+        self.layout_processing.addWidget(
+            self.processing_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
 
         self.layout_processing.setContentsMargins(0, 10, 0, 0)
 
