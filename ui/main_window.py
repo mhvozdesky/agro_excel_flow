@@ -1,13 +1,32 @@
+from enum import Enum
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout,
     QSizePolicy, QRadioButton, QTextEdit, QButtonGroup, QProgressBar,
     QSpacerItem, QFrame
 )
-from PyQt6 import QtWidgets
+from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtGui import QFont
 
 from settings import VERSION
+
+
+NO_FOLDER_SELECTED = 'Папку не вибрано'
+NO_FILE_SELECTED = 'Файл не вибрано'
+SELECT_DIR = 'Обрати папку'
+SELECT_FILE = 'Обрати файл'
+
+
+class CropsRadio(Enum):
+    sunflower = 'Соняшник'
+    rapeseed = 'Ріпак'
+    corn = 'Кукурудза'
+
+
+class OperationsRadio(Enum):
+    new_file = 'Новий файл'
+    exist_file = 'Існуючий файл'
 
 
 class AgroMainWindow(QWidget):
@@ -49,8 +68,12 @@ class AgroMainWindow(QWidget):
         main_layout.addLayout(self.layout_progres)
         main_layout.addLayout(self.layout_logs)
 
-        self.button_group_culture = QButtonGroup()
+        self.button_group_crops = QButtonGroup()
         self.button_group_file_operations = QButtonGroup()
+        self.button_operation = QPushButton('Обрати папку')
+        self.crops_group = QButtonGroup()
+        self.operation_group = QButtonGroup()
+        self.label_dir_file = QLabel('Папку не вибрано')
 
         self.font = QFont()
         self.font.setPointSize(8)
@@ -63,6 +86,25 @@ class AgroMainWindow(QWidget):
         self.fill_layout_processing()
         self.fill_layout_progres()
         self.fill_layout_logs()
+
+        self.input_file_list = None
+        self.dir_path = None
+        self.file_path = None
+        self.crops = None
+        self.operation = None
+
+        self.set_default_params()
+
+    def get_radio_group_value(self, radio_group):
+        checked_button = radio_group.checkedButton()
+        if checked_button is not None:
+            return checked_button.property('name')
+        return None
+
+    def set_default_params(self):
+        self.input_file_list = []
+        self.crops = self.get_radio_group_value(self.crops_group)
+        self.operation = self.get_radio_group_value(self.operation_group)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -93,7 +135,7 @@ class AgroMainWindow(QWidget):
         frame_logo.setProperty('class', 'logo')
         self.layout_logo.addWidget(frame_logo)
 
-    def fill_frame_culture(self):
+    def fill_frame_crops(self):
         frame = self.get_frame()
         frame.setFixedHeight(151)
 
@@ -101,33 +143,43 @@ class AgroMainWindow(QWidget):
 
         label = QLabel('Культура')
         label.setProperty('class', 'radio_label')
-        radio_sunflower = QRadioButton('Соняшник')
+
+        radio_sunflower = QRadioButton(CropsRadio.sunflower.value)
+        radio_sunflower.setProperty('name', CropsRadio.sunflower.name)
         radio_sunflower.setChecked(True)
-        radio_rapeseed = QRadioButton('Ріпак')
+
+        radio_rapeseed = QRadioButton(CropsRadio.rapeseed.value)
+        radio_rapeseed.setProperty('name', CropsRadio.rapeseed.name)
         radio_rapeseed.setProperty('class', 'last_radio')
-        radio_corn = QRadioButton('Кукурудза')
+
+        radio_corn = QRadioButton(CropsRadio.corn.value)
+        radio_corn.setProperty('name', CropsRadio.corn.name)
         radio_corn.setProperty('class', 'radio_corn')
 
-        culture_group = QButtonGroup()
-        culture_group.addButton(radio_sunflower)
-        culture_group.addButton(radio_rapeseed)
-        culture_group.addButton(radio_corn)
+        self.crops_group.addButton(radio_sunflower)
+        self.crops_group.addButton(radio_rapeseed)
+        self.crops_group.addButton(radio_corn)
 
         frame_layout.addWidget(label)
 
-        layout_culture_radio = QGridLayout()
-        layout_culture_radio.setContentsMargins(3, 0, 0, 0)
-        layout_culture_radio.addWidget(radio_sunflower, 0, 0)
-        layout_culture_radio.addWidget(radio_rapeseed, 0, 1)
-        layout_culture_radio.addWidget(radio_corn, 1, 0)
-        layout_culture_radio.addItem(self.spacer_item_h)
+        layout_crops_radio = QGridLayout()
+        layout_crops_radio.setContentsMargins(3, 0, 0, 0)
+        layout_crops_radio.addWidget(radio_sunflower, 0, 0)
+        layout_crops_radio.addWidget(radio_rapeseed, 0, 1)
+        layout_crops_radio.addWidget(radio_corn, 1, 0)
+        layout_crops_radio.addItem(self.spacer_item_h)
 
-        frame_layout.addLayout(layout_culture_radio)
+        frame_layout.addLayout(layout_crops_radio)
         frame_layout.addItem(self.spacer_item_v)
 
         frame.setLayout(frame_layout)
 
         self.layout_grid.addWidget(frame, 0, 0)
+
+        self.crops_group.buttonClicked.connect(self.on_crops_changed)
+
+    def on_crops_changed(self, button):
+        self.crops = button.property('name')
 
     def fill_frame_operations(self):
         frame = self.get_frame()
@@ -139,20 +191,27 @@ class AgroMainWindow(QWidget):
 
         title = QLabel('Дії з файлами')
         title.setProperty('class', 'radio_label')
-        radio_new_file = QRadioButton('Новий файл')
-        radio_new_file.setChecked(True)
-        radio_exist_file = QRadioButton('Існуючий файл')
-        radio_exist_file.setProperty('class', 'last_radio')
-        button_operation = QPushButton('Обрати папку')
-        button_operation.setFixedSize(121, 35)
-        button_operation.setProperty('class', 'button_operation')
-        label = QLabel('Папку не вибрано')
-        label.setFont(self.font)
-        label.setProperty('class', 'label_file')
 
-        operation_group = QButtonGroup()
-        operation_group.addButton(radio_new_file)
-        operation_group.addButton(radio_exist_file)
+        radio_new_file = QRadioButton(OperationsRadio.new_file.value)
+        radio_new_file.setChecked(True)
+        radio_new_file.setProperty('name', OperationsRadio.new_file.name)
+
+        radio_exist_file = QRadioButton(OperationsRadio.exist_file.value)
+        radio_exist_file.setProperty('class', 'last_radio')
+        radio_exist_file.setProperty('name', OperationsRadio.exist_file.name)
+
+        self.button_operation.setFixedSize(121, 35)
+        self.button_operation.setProperty('class', 'button_operation')
+
+        self.label_dir_file.setFont(self.font)
+        self.label_dir_file.setProperty('class', 'label_file')
+        self.label_dir_file.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Preferred
+        )
+
+        self.operation_group.addButton(radio_new_file)
+        self.operation_group.addButton(radio_exist_file)
 
         frame_layout.addWidget(title)
 
@@ -161,13 +220,69 @@ class AgroMainWindow(QWidget):
         layout_operations.addItem(self.spacer_item_h)
 
         frame_layout.addLayout(layout_operations)
-        frame_layout.addWidget(button_operation)
-        frame_layout.addWidget(label)
+        frame_layout.addWidget(self.button_operation)
+        frame_layout.addWidget(self.label_dir_file)
 
         frame_layout.addItem(self.spacer_item_v)
 
         frame.setLayout(frame_layout)
         self.layout_grid.addWidget(frame, 0, 1)
+
+        self.operation_group.buttonClicked.connect(self.on_operation_changed)
+        self.button_operation.clicked.connect(self.select_dir_or_file)
+
+    def set_operation_path(self, value, operation):
+        if operation == OperationsRadio.new_file.name:
+            self.dir_path = value if value != NO_FOLDER_SELECTED else None
+            self.file_path = None
+        elif operation == OperationsRadio.exist_file.name:
+            self.file_path = value if value != NO_FILE_SELECTED else None
+            self.dir_path = None
+        self.set_elided_folder_path(value)
+
+    def on_operation_changed(self, button):
+        self.operation = button.property('name')
+        if self.operation == OperationsRadio.exist_file.name:
+            self.set_operation_path(NO_FILE_SELECTED, self.operation)
+            self.button_operation.setText(SELECT_FILE)
+        elif self.operation == OperationsRadio.new_file.name:
+            self.set_operation_path(NO_FOLDER_SELECTED, self.operation)
+            self.button_operation.setText(SELECT_DIR)
+
+    def set_elided_folder_path(self, full_path):
+        # get the width of the label
+        label_width = self.label_dir_file.width() - 5
+
+        # create a QFontMetrics object with a label font
+        font_metrics = QtGui.QFontMetrics(self.label_dir_file.font())
+
+        # cut the text so that it fits in the label,
+        # keeping the final part of the path
+        elided_text = font_metrics.elidedText(
+            full_path,
+            QtCore.Qt.TextElideMode.ElideLeft,
+            label_width
+        )
+
+        # set the truncated text for the label
+        self.label_dir_file.setText(elided_text)
+
+    def select_dir_or_file(self):
+        operation = self.get_radio_group_value(self.operation_group)
+
+        if operation == OperationsRadio.new_file.name:
+            folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Обрати папку")
+            if folder:
+                self.set_operation_path(folder, operation)
+        elif operation == OperationsRadio.exist_file.name:
+            file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                'Відкрити файл',
+                '',
+                'Excel Files (*.xlsx *.xls);;All Files (*)'
+            )
+            if file_path:
+                self.set_operation_path(file_path, operation)
 
     def fill_input_button(self):
         frame = self.get_frame()
@@ -204,7 +319,7 @@ class AgroMainWindow(QWidget):
         self.layout_grid.addWidget(frame, 1, 1)
 
     def fill_layout_grid(self):
-        self.fill_frame_culture()
+        self.fill_frame_crops()
         self.fill_frame_operations()
         self.fill_input_button()
         self.fill_input_files()
