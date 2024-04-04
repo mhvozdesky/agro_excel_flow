@@ -1,3 +1,4 @@
+import sys
 import os.path
 from enum import Enum
 
@@ -28,6 +29,28 @@ class CropsRadio(Enum):
 class OperationsRadio(Enum):
     new_file = 'Новий файл'
     exist_file = 'Існуючий файл'
+
+
+class StreamRedirector:
+    def __init__(self, text_widget, color=QtGui.QColor(20, 51, 43)):
+        self.text_widget = text_widget
+        self.color = color
+
+    def write(self, message):
+        self.display_text(message, self.color)
+
+    def display_text(self, message, color):
+        self.text_widget.setTextColor(color)
+        self.text_widget.insertPlainText(message)
+        self.text_widget.verticalScrollBar().setValue(
+            self.text_widget.verticalScrollBar().maximum()
+        )
+
+    def write_special_text(self, message, color):
+        self.display_text(message, color)
+
+    def flush(self):
+        pass
 
 
 class AgroMainWindow(QWidget):
@@ -97,6 +120,8 @@ class AgroMainWindow(QWidget):
         self.operation = None
 
         self.set_default_params()
+
+        self.error_stream = StreamRedirector(self.logs_edit, QtGui.QColor(255, 0, 0))
 
     def get_radio_group_value(self, radio_group):
         checked_button = radio_group.checkedButton()
@@ -366,6 +391,23 @@ class AgroMainWindow(QWidget):
 
         self.layout_processing.setContentsMargins(0, 10, 0, 0)
 
+        self.processing_button.clicked.connect(self.processing_data)
+
+    def processing_data(self):
+        from main import main
+        try:
+            print('spam')
+        except Exception as e:
+            error_message = str(e)
+            self.error_stream.write_special_text(
+                error_message + '\n',
+                QtGui.QColor(209, 30, 30)
+            )
+        self.error_stream.write_special_text(
+            error_message + '\n',
+            QtGui.QColor(28, 119, 39)
+        )
+
     def fill_layout_progres(self):
         self.progressBar.setProperty('value', 24)
         self.progressBar.setProperty('class', 'progress_bar')
@@ -381,6 +423,7 @@ class AgroMainWindow(QWidget):
 
         self.logs_edit.setReadOnly(True)
         self.logs_edit.setFont(self.font)
+        sys.stdout = StreamRedirector(self.logs_edit)
 
         frame_layout.addWidget(self.logs_edit)
 
