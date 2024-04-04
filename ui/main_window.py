@@ -350,7 +350,7 @@ class AgroMainWindow(QWidget):
             'Excel Files (*.xlsx *.xls);;All Files (*)'
         )
         if file_paths:
-            self.file_path = file_paths
+            self.input_file_list = file_paths
             self.display_input_files(file_paths)
         self.processing_button.setDisabled(False)
 
@@ -395,18 +395,27 @@ class AgroMainWindow(QWidget):
 
     def processing_data(self):
         from main import main
+
+        self.logs_edit.setPlainText('')
+
         try:
-            print('spam')
+            main(
+                file_list=self.input_file_list,
+                file_path=self.file_path,
+                dir_path=self.dir_path
+            )
+
+            self.error_stream.write_special_text(
+                'Обробка завершена' + '\n',
+                QtGui.QColor(28, 119, 39)
+            )
+
         except Exception as e:
             error_message = str(e)
             self.error_stream.write_special_text(
                 error_message + '\n',
                 QtGui.QColor(209, 30, 30)
             )
-        self.error_stream.write_special_text(
-            error_message + '\n',
-            QtGui.QColor(28, 119, 39)
-        )
 
     def fill_layout_progres(self):
         self.progressBar.setProperty('value', 24)
