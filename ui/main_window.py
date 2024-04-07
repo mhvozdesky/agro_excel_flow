@@ -151,20 +151,6 @@ class AgroMainWindow(QWidget):
         self.layout_progres = QVBoxLayout()
         self.layout_logs = QVBoxLayout()
 
-        self.spacer_item_v = QSpacerItem(
-            20,
-            40,
-            QSizePolicy.Policy.Minimum,
-            QSizePolicy.Policy.Expanding
-        )
-
-        self.spacer_item_h = QtWidgets.QSpacerItem(
-            40,
-            20,
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Minimum
-        )
-
         main_layout.addLayout(self.layout_logo)
         main_layout.addLayout(self.layout_grid)
         main_layout.addLayout(self.layout_processing)
@@ -204,6 +190,24 @@ class AgroMainWindow(QWidget):
 
         self.data_processor = DataProcessor()
         self.init_data_processor()
+
+    def get_spacer_item_v(self):
+        spacer_item_v = QSpacerItem(
+            20,
+            40,
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Expanding
+        )
+        return spacer_item_v
+
+    def get_spacer_item_h(self):
+        spacer_item_h = QtWidgets.QSpacerItem(
+            40,
+            20,
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Minimum
+        )
+        return spacer_item_h
 
     def init_data_processor(self):
         self.data_processor.progress_updated.connect(self.update_progress)
@@ -284,10 +288,10 @@ class AgroMainWindow(QWidget):
         layout_crops_radio.addWidget(radio_sunflower, 0, 0)
         layout_crops_radio.addWidget(radio_rapeseed, 0, 1)
         layout_crops_radio.addWidget(radio_corn, 1, 0)
-        layout_crops_radio.addItem(self.spacer_item_h)
+        layout_crops_radio.addItem(self.get_spacer_item_h())
 
         frame_layout.addLayout(layout_crops_radio)
-        frame_layout.addItem(self.spacer_item_v)
+        frame_layout.addItem(self.get_spacer_item_v())
 
         frame.setLayout(frame_layout)
 
@@ -334,13 +338,13 @@ class AgroMainWindow(QWidget):
 
         layout_operations.addWidget(radio_new_file)
         layout_operations.addWidget(radio_exist_file)
-        layout_operations.addItem(self.spacer_item_h)
+        layout_operations.addItem(self.get_spacer_item_h())
 
         frame_layout.addLayout(layout_operations)
         frame_layout.addWidget(self.button_operation)
         frame_layout.addWidget(self.label_dir_file)
 
-        frame_layout.addItem(self.spacer_item_v)
+        frame_layout.addItem(self.get_spacer_item_v())
 
         frame.setLayout(frame_layout)
         self.layout_grid.addWidget(frame, 0, 1)
@@ -411,9 +415,11 @@ class AgroMainWindow(QWidget):
         button.setFixedSize(89, 35)
         button.setProperty('class', 'button_input')
 
+        spacer_item_v = self.get_spacer_item_v()
+
         frame_layout.addWidget(title)
         frame_layout.addWidget(button)
-        frame_layout.addItem(self.spacer_item_v)
+        frame_layout.addItem(spacer_item_v)
 
         frame.setLayout(frame_layout)
 
