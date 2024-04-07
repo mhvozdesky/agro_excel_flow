@@ -20,7 +20,8 @@ NO_FOLDER_SELECTED = 'Папку не вибрано'
 NO_FILE_SELECTED = 'Файл не вибрано'
 SELECT_DIR = 'Обрати папку'
 SELECT_FILE = 'Обрати файл'
-
+TEXT_BUTTON_DATA_PROCESSING = 'Обробка даних'
+UPLOAD_FILES = 'Зачекайте завантаження файлів'
 
 STD_OUT = sys.stdout
 
@@ -177,7 +178,7 @@ class AgroMainWindow(QWidget):
         self.operation_group = QButtonGroup()
         self.label_dir_file = QLabel('Папку не вибрано')
         self.input_files_text_edit = QTextEdit()
-        self.processing_button = QPushButton('Обробка даних')
+        self.processing_button = QPushButton(TEXT_BUTTON_DATA_PROCESSING)
 
         self.font = QFont()
         self.font.setPointSize(8)
@@ -429,6 +430,9 @@ class AgroMainWindow(QWidget):
 
     def select_input_files(self):
         self.processing_button.setDisabled(True)
+        self.processing_button.setFixedSize(251, 41)
+        self.processing_button.setText(UPLOAD_FILES)
+
         file_paths, _ = QtWidgets.QFileDialog.getOpenFileNames(
             self,
             'Відкрити файли',
@@ -439,6 +443,8 @@ class AgroMainWindow(QWidget):
             self.input_file_list = file_paths
             self.display_input_files(file_paths)
         self.processing_button.setDisabled(False)
+        self.processing_button.setText(TEXT_BUTTON_DATA_PROCESSING)
+        self.processing_button.setFixedSize(151, 41)
 
     def fill_input_files(self):
         frame = self.get_frame()
