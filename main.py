@@ -10,21 +10,28 @@ from PyQt6 import QtWidgets
 from styles import Styles
 from current_books import AgroBook
 from settings import DATA_DIR, FILE_NAME
-from ui.main_window import AgroMainWindow
+from ui.main_window import AgroMainWindow, DataProcessor
+
+
+def get_file_name_by_path(file_path):
+    _, file_name = os.path.split(file_path)
+    return file_name
 
 
 def get_wb(input_file):
     try:
         workbook = load_workbook(input_file)
     except Exception:
-        raise ValueError(f'Невдалось відкрити файл {input_file}')
+        file_name = get_file_name_by_path(input_file)
+        raise ValueError(f'Невдалось відкрити файл "{file_name}"')
     return workbook
 
 
 def get_ws(wb, input_file):
     sheet_name = 'Whole data'
     if sheet_name not in wb.sheetnames:
-        raise ValueError(f'Відсутній лист {sheet_name} у файлі {input_file}')
+        file_name = get_file_name_by_path(input_file)
+        raise ValueError(f'Відсутній лист "{sheet_name}" у файлі "{file_name}"')
     ws = wb[sheet_name]
     return ws
 
@@ -53,12 +60,19 @@ def process_file(agro_book, input_ws):
 
 
 def fill_book(agro_book, file_list):
-    for input_file in file_list:
+    data_processor = DataProcessor()
+    for index, input_file in enumerate(file_list):
+        print(f'==Обробка файлу {get_file_name_by_path(input_file)}==')
         try:
             input_ws = open_book(input_file)
             process_file(agro_book, input_ws)
-        except Exception:
-            pass
+        except Exception as e:
+            print(e, file=sys.stderr)
+
+        progress = int(((index + 1) * 100) / len(file_list))
+        data_processor.update_progress(progress)
+
+
 
 
 def file_exists(file_path):

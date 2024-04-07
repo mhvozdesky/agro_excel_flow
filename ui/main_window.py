@@ -10,6 +10,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtGui import QFont
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.sip import wrappertype
 
 from settings import VERSION
 
@@ -18,6 +20,9 @@ NO_FOLDER_SELECTED = 'Папку не вибрано'
 NO_FILE_SELECTED = 'Файл не вибрано'
 SELECT_DIR = 'Обрати папку'
 SELECT_FILE = 'Обрати файл'
+
+
+STD_OUT = sys.stdout
 
 
 class CropsRadio(Enum):
@@ -29,6 +34,79 @@ class CropsRadio(Enum):
 class OperationsRadio(Enum):
     new_file = 'Новий файл'
     exist_file = 'Існуючий файл'
+
+
+class SingletonMeta(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class SingletonQThreadMeta(wrappertype):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(SingletonQThreadMeta, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class StreamProxy:
+    def __init__(self, target_instance, type_msg):
+        self.target_instance = target_instance
+        self.type_msg = type_msg
+
+    def write(self, message):
+        self.target_instance.send_msg(message, self.type_msg)
+
+    def flush(self):
+        pass
+
+
+class DataProcessor(QThread, metaclass=SingletonQThreadMeta):
+    progress_updated = pyqtSignal(int)
+    msg_updated = pyqtSignal(str, str)
+    processing_complete = pyqtSignal(bool)
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.input_file_list = None
+        self.dir_path = None
+        self.file_path = None
+        self.crops = None
+        self.operation = None
+
+        sys.stdout = StreamProxy(self, 'normal')
+        sys.stderr = StreamProxy(self, 'error')
+
+    def run(self):
+        from main import main
+
+        try:
+            main(
+                file_list=self.input_file_list,
+                file_path=self.file_path,
+                dir_path=self.dir_path
+            )
+
+            self.send_msg('Обробка завершена', type_msg='success')
+        except Exception as e:
+            self.send_msg(str(e), 'error')
+        finally:
+            self.send_processing_complete()
+
+    def send_msg(self, value, type_msg):
+        self.msg_updated.emit(type_msg, value)
+
+    def send_processing_complete(self):
+        self.processing_complete.emit(True)
+
+    def update_progress(self, value):
+        self.progress_updated.emit(value)
 
 
 class StreamRedirector:
@@ -121,7 +199,15 @@ class AgroMainWindow(QWidget):
 
         self.set_default_params()
 
-        self.error_stream = StreamRedirector(self.logs_edit, QtGui.QColor(255, 0, 0))
+        self.logs_stream = StreamRedirector(self.logs_edit)
+
+        self.data_processor = DataProcessor()
+        self.init_data_processor()
+
+    def init_data_processor(self):
+        self.data_processor.progress_updated.connect(self.update_progress)
+        self.data_processor.msg_updated.connect(self.send_text)
+        self.data_processor.processing_complete.connect(self.on_processing_complete)
 
     def get_radio_group_value(self, radio_group):
         checked_button = radio_group.checkedButton()
@@ -394,31 +480,42 @@ class AgroMainWindow(QWidget):
         self.processing_button.clicked.connect(self.processing_data)
 
     def processing_data(self):
-        from main import main
+        self.logs_edit.clear()
+        self.progressBar.setValue(0)
 
-        self.logs_edit.setPlainText('')
+        self.data_processor.input_file_list = self.input_file_list
+        self.data_processor.dir_path = self.dir_path
+        self.data_processor.file_path = self.file_path
+        self.data_processor.crops = self.crops
+        self.data_processor.operation = self.operation
 
         try:
-            main(
-                file_list=self.input_file_list,
-                file_path=self.file_path,
-                dir_path=self.dir_path
-            )
-
-            self.error_stream.write_special_text(
-                'Обробка завершена' + '\n',
-                QtGui.QColor(28, 119, 39)
-            )
+            self.processing_button.setDisabled(True)
+            self.data_processor.start()
 
         except Exception as e:
             error_message = str(e)
-            self.error_stream.write_special_text(
+            self.logs_stream.write_special_text(
                 error_message + '\n',
                 QtGui.QColor(209, 30, 30)
             )
 
+    def on_processing_complete(self):
+        self.processing_button.setDisabled(False)
+
+    def send_text(self, type_msg, value):
+        if type_msg == 'normal':
+            self.logs_stream.write(value)
+        elif type_msg == 'error':
+            self.logs_stream.write_special_text(value, QtGui.QColor(209, 30, 30))
+        elif type_msg == 'success':
+            self.logs_stream.write_special_text(value, QtGui.QColor(28, 119, 39))
+
+    def update_progress(self, value):
+        self.progressBar.setValue(value)
+
     def fill_layout_progres(self):
-        self.progressBar.setProperty('value', 24)
+        self.progressBar.setProperty('value', 0)
         self.progressBar.setProperty('class', 'progress_bar')
         self.progressBar.setTextVisible(False)
         self.layout_progres.addWidget(self.progressBar)
@@ -432,7 +529,6 @@ class AgroMainWindow(QWidget):
 
         self.logs_edit.setReadOnly(True)
         self.logs_edit.setFont(self.font)
-        sys.stdout = StreamRedirector(self.logs_edit)
 
         frame_layout.addWidget(self.logs_edit)
 
