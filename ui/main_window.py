@@ -143,7 +143,7 @@ class AgroMainWindow(QWidget):
 
         self.setWindowTitle(f'Agro Flow v{VERSION}')
         self.setContentsMargins(20, 0, 20, 20)
-        self.resize(810, 790)
+        self.resize(810, 614)
         self.setWindowIcon(QtGui.QIcon(':/ui/images/icon3.ico'))
 
         main_layout = QVBoxLayout()
