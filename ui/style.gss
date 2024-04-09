@@ -65,19 +65,19 @@ QRadioButton::indicator {
 
 
 QRadioButton::indicator::checked {
-    image: url(ui/images/radio/checked.svg);
+    image: url(:/ui/images/radio/checked.svg);
     width: 16px;
     height: 16px;
 }
 
 QRadioButton::indicator::unchecked {
-    image: url(ui/images/radio/unchecked.svg);
+    image: url(:/ui/images/radio/unchecked.svg);
     width: 16px;
     height: 16px;
 }
 
 QRadioButton::indicator::disabled {
-    image: url(ui/images/radio/disabled.svg);
+    image: url(:/ui/images/radio/disabled.svg);
 }
 
 QRadioButton::disabled {
@@ -171,7 +171,7 @@ QTextEdit
 }
 
 .logo {
-    image: url(ui/images/logo/AgroFlow2.png);
+    image: url(:ui/images/logo/AgroFlow2.png);
     border: none;
 }
 

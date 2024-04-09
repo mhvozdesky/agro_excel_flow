@@ -1,0 +1,12 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>ui/images/icon.png</file>
+    <file>ui/images/icon2.jpg</file>
+    <file>ui/images/icon2.ico</file>
+    <file>ui/images/logo/AgroFlow2.png</file>
+    <file>ui/images/logo/AgroFlow.png</file>
+    <file>ui/images/radio/checked.svg</file>
+    <file>ui/images/radio/disabled.svg</file>
+    <file>ui/images/radio/unchecked.svg</file>
+</qresource>
+</RCC>

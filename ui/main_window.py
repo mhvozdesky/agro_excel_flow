@@ -1,5 +1,8 @@
 import sys
 import os.path
+
+import resources_rc
+
 from enum import Enum
 
 from PyQt6.QtCore import Qt
@@ -141,6 +144,7 @@ class AgroMainWindow(QWidget):
         self.setWindowTitle(f'Agro Flow v{VERSION}')
         self.setContentsMargins(20, 0, 20, 20)
         self.resize(810, 790)
+        self.setWindowIcon(QtGui.QIcon(':/ui/images/icon2.ico'))
 
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)

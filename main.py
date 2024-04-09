@@ -169,6 +169,7 @@ def test():
 
 
 if __name__ == '__main__':
+    import resources_rc
     # data_dir = os.getenv('DATA_DIR', None)
     #
     # dirpath, dirnames, filenames = next(os.walk(f'{data_dir}/input_data/'))
@@ -184,7 +185,14 @@ if __name__ == '__main__':
 
     # test()
 
-    with open('ui/style.gss') as style_file:
+    if getattr(sys, 'frozen', False):
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
+
+    style_path = os.path.join(application_path, 'ui/style.gss')
+
+    with open(style_path) as style_file:
         style_data = style_file.read()
 
     app = QApplication(sys.argv)
