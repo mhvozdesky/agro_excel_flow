@@ -170,20 +170,6 @@ def test():
 
 if __name__ == '__main__':
     import resources_rc
-    # data_dir = os.getenv('DATA_DIR', None)
-    #
-    # dirpath, dirnames, filenames = next(os.walk(f'{data_dir}/input_data/'))
-    # input_file_list = [f'{data_dir}/input_data/231010_UASESF88142023.xlsx']
-    # # input_file_list = [f'{dirpath}{file_name}' for file_name in filenames if file_name.endswith('xlsx')]
-    #
-    # # find_element(input_file_list)
-    #
-    # main_file = f'{data_dir}/Aggregate_Yield.xlsx'
-    #
-    # main(file_list=input_file_list, dir_path=data_dir)
-    # main(file_list=input_file_list, file_path=main_file)
-
-    # test()
 
     if getattr(sys, 'frozen', False):
         application_path = sys._MEIPASS

@@ -4,6 +4,7 @@ QWidget
     color: #14332B;
     selection-background-color: #b78620;
     selection-color: #000;
+    font-size: 14px;
 }
 
 /*-----QLabel-----*/
@@ -25,6 +26,7 @@ QPushButton
     border-color: #0C652E;
     padding: 5px;
     border: none;
+
 }
 
 QPushButton::hover
@@ -89,7 +91,7 @@ QRadioButton::disabled {
 /*-----QScrollBar-----*/
 QScrollBar:vertical
 {
-    background-color: #DADFE9;
+    background-color: #93969b;
     width: 10px;
     border: 1px solid #b5bfd4;
     margin: 0px 0px 0px 0px;
@@ -104,7 +106,6 @@ QScrollBar::handle:vertical
     min-height: 20px;
     border-radius: 3px;
     margin: 1px;
-
 }
 
 QScrollBar::handle:vertical:hover {

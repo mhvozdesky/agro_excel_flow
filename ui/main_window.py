@@ -144,7 +144,7 @@ class AgroMainWindow(QWidget):
         self.setWindowTitle(f'Agro Flow v{VERSION}')
         self.setContentsMargins(20, 0, 20, 20)
         self.resize(810, 790)
-        self.setWindowIcon(QtGui.QIcon(':/ui/images/icon2.ico'))
+        self.setWindowIcon(QtGui.QIcon(':/ui/images/icon3.ico'))
 
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
@@ -325,7 +325,7 @@ class AgroMainWindow(QWidget):
         radio_exist_file.setProperty('class', 'last_radio')
         radio_exist_file.setProperty('name', OperationsRadio.exist_file.name)
 
-        self.button_operation.setFixedSize(121, 35)
+        self.button_operation.setFixedSize(121, 43)
         self.button_operation.setProperty('class', 'button_operation')
 
         self.label_dir_file.setFont(self.font)
@@ -334,6 +334,7 @@ class AgroMainWindow(QWidget):
             QtWidgets.QSizePolicy.Policy.Expanding,
             QtWidgets.QSizePolicy.Policy.Preferred
         )
+        self.label_dir_file.setStyleSheet("font-size: 12px;")
 
         self.operation_group.addButton(radio_new_file)
         self.operation_group.addButton(radio_exist_file)
@@ -416,7 +417,7 @@ class AgroMainWindow(QWidget):
 
         title = QLabel('Вхідні дані')
         button = QPushButton('Обрати')
-        button.setFixedSize(89, 35)
+        button.setFixedSize(89, 43)
         button.setProperty('class', 'button_input')
 
         spacer_item_v = self.get_spacer_item_v()
@@ -465,6 +466,7 @@ class AgroMainWindow(QWidget):
         self.input_files_text_edit.setReadOnly(True)
         self.input_files_text_edit.setFont(self.font)
         self.input_files_text_edit.setText('Файлів не вибрано')
+        self.input_files_text_edit.setStyleSheet("font-size: 12px;")
 
         frame_layout.addWidget(self.input_files_text_edit)
 
@@ -545,6 +547,7 @@ class AgroMainWindow(QWidget):
 
         self.logs_edit.setReadOnly(True)
         self.logs_edit.setFont(self.font)
+        self.logs_edit.setStyleSheet("font-size: 12px;")
 
         frame_layout.addWidget(self.logs_edit)
 
