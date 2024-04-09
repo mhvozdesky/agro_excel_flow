@@ -1,3 +1,4 @@
+import sys
 from openpyxl import Workbook, load_workbook
 from styles import Styles
 
@@ -75,8 +76,7 @@ class AgroBook:
             try:
                 self.wb = load_workbook(file_path)
             except Exception:
-                print(f'Не вдалось відкрити файл {file_path}')
-                raise
+                raise RuntimeError(f'Не вдалось відкрити файл {file_path}')
 
             self.ws = self.get_ws_from_file(self.wb)
             self.num_rows = self.ws.max_row
@@ -122,7 +122,7 @@ class AgroBook:
                 try:
                     val = method(row_dict)
                 except Exception as e:
-                    print(f'Помилка при розрахунку {cell_coordinate}. {e}')
+                    print(f'Помилка при розрахунку {cell_coordinate}. {e}', file=sys.stderr)
                     val = None
 
                 cell.value = val

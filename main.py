@@ -1,29 +1,37 @@
 import os
 import os.path
+import sys
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Border, Side, Alignment
+from PyQt6.QtWidgets import QApplication
+from PyQt6 import QtWidgets
 
 from styles import Styles
 from current_books import AgroBook
+from settings import DATA_DIR, FILE_NAME
+from ui.main_window import AgroMainWindow, DataProcessor
 
 
-DATA_DIR = None
-FILE_NAME = 'Aggregate_Yield.xlsx'
+def get_file_name_by_path(file_path):
+    _, file_name = os.path.split(file_path)
+    return file_name
 
 
 def get_wb(input_file):
     try:
         workbook = load_workbook(input_file)
     except Exception:
-        raise ValueError(f'Невдалось відкрити файл {input_file}')
+        file_name = get_file_name_by_path(input_file)
+        raise ValueError(f'Невдалось відкрити файл "{file_name}"')
     return workbook
 
 
 def get_ws(wb, input_file):
     sheet_name = 'Whole data'
     if sheet_name not in wb.sheetnames:
-        raise ValueError(f'Відсутній лист {sheet_name} у файлі {input_file}')
+        file_name = get_file_name_by_path(input_file)
+        raise ValueError(f'Відсутній лист "{sheet_name}" у файлі "{file_name}"')
     ws = wb[sheet_name]
     return ws
 
@@ -52,12 +60,19 @@ def process_file(agro_book, input_ws):
 
 
 def fill_book(agro_book, file_list):
-    for input_file in file_list:
+    data_processor = DataProcessor()
+    for index, input_file in enumerate(file_list):
+        print(f'==Обробка файлу {get_file_name_by_path(input_file)}==')
         try:
             input_ws = open_book(input_file)
             process_file(agro_book, input_ws)
-        except Exception:
-            pass
+        except Exception as e:
+            print(e, file=sys.stderr)
+
+        progress = int(((index + 1) * 100) / len(file_list))
+        data_processor.update_progress(progress)
+
+
 
 
 def file_exists(file_path):
@@ -154,17 +169,22 @@ def test():
 
 
 if __name__ == '__main__':
-    data_dir = os.getenv('DATA_DIR', None)
+    import resources_rc
 
-    dirpath, dirnames, filenames = next(os.walk(f'{data_dir}/input_data/'))
-    input_file_list = [f'{data_dir}/input_data/231010_UASESF88142023.xlsx']
-    # input_file_list = [f'{dirpath}{file_name}' for file_name in filenames if file_name.endswith('xlsx')]
-    
-    # find_element(input_file_list)
+    if getattr(sys, 'frozen', False):
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
 
-    main_file = f'{data_dir}/Aggregate_Yield.xlsx'
+    style_path = os.path.join(application_path, 'ui/style.gss')
 
-    main(file_list=input_file_list, dir_path=data_dir)
-    # main(file_list=input_file_list, file_path=main_file)
+    with open(style_path) as style_file:
+        style_data = style_file.read()
 
-    # test()
+    app = QApplication(sys.argv)
+    app.setStyleSheet(style_data)
+
+    window = AgroMainWindow()
+    window.show()
+
+    sys.exit(app.exec())
