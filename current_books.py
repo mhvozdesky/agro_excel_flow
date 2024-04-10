@@ -5,6 +5,35 @@ from styles import Styles
 
 class BaseBook:
     sheet_name = 'aggregate_yield'
+    column_lib = {
+        'Область': {'type': 'handle', 'width': 19.35},
+        'Район': {'type': 'simple', 'width': 17.36},
+        'Господарство': {'type': 'handle', 'width': 22.80},
+        'GPS-координати поля': {'type': 'handle', 'width': 28.53},
+        'COMPANY': {'type': 'simple', 'width': 15.41},
+        'HYBRIDS': {'type': 'simple', 'width': 20.24},
+        'Обробіток грунту': {'type': 'simple', 'width': 15.77},
+        'Тип грунту': {'type': 'simple', 'width': 15.77},
+        'Густота на момент\nзбирання, тис/га': {'type': 'simple', 'width': 19.92},
+        'Кіл-ть\nрядків': {'type': 'simple', 'width': 8.57},
+        'Довжина\nділянки': {'type': 'simple', 'width': 8.57},
+        'Площа, га': {'type': 'handle', 'width': 10.0, 'style': {'number_format': '0.0000'}},
+        'Вага з\nділянки, кг': {'type': 'simple', 'width': 10.65},
+        'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': {'type': 'handle', 'width': 20.53, 'style': {'number_format': '0.00'}},
+        'Harvesting moisture,\n% Вологість': {'type': 'simple', 'width': 18.29},
+        'Вологість на час\nзбирання, %': {'type': 'simple', 'width': 18.29},
+        'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': {'type': 'handle', 'width': 19.80, 'style': {'number_format': '0.00'}},
+        'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': {'type': 'handle', 'width': 19.80, 'style': {'number_format': '0.00'}},
+        'Урожайність у\nперерахунку на базисну\nвологість (9 %) (UA)': {'type': 'handle', 'width': 22.47, 'style': {'number_format': '0.00'}},
+        'Попередник': {'type': 'simple', 'width': 16.71},
+        'Дата посіву': {'type': 'simple', 'width': 11.10},
+        'Дата збирання': {'type': 'simple', 'width': 13.74},
+        'ПІБ менеджера,\nщо створив протокол': {'type': 'simple', 'width': 22.03},
+        'Тип досліду\n(Demo/SBS/Strip)': {'type': 'simple', 'width': 15.33},
+        'Ширина\nміжряддя': {'type': 'simple', 'width': 16.63},
+        'Ширина\nділянки': {'type': 'simple', 'width': 16.63},
+        'Коментарі': {'type': 'handle', 'width': 35.20}
+    }
 
     def __init__(self, file_path=None):
         self.wb = None
@@ -14,6 +43,21 @@ class BaseBook:
         self.columns = self.init_columns()
 
         self.init_workbook(file_path)
+
+    def get_column_from_lib(self, title, letter, func=None, rel_col=None):
+        column_setting = self.column_lib.get(title)
+        if column_setting is None:
+            raise ValueError(f'В бібліотеці колонок не знайдено {title}')
+
+        column_type = column_setting['type']
+        if column_type == 'handle':
+            column_setting['func'] = func
+        elif column_type == 'simple':
+            column_setting['rel_col'] = rel_col
+
+        column_setting['letter'] = letter
+
+        return column_setting
 
     def init_columns(self):
         return {'NN': {'type': 'handle', 'func': self.line_number, 'letter': 'A', 'width': 6.54}}
@@ -125,39 +169,11 @@ class BaseBook:
     def line_number(self, row_dict):
         return self.num_rows - 1
 
+    def calculate_the_area_by_formula(self):
+        pass
 
-class AgroBookSunflower(BaseBook):
-    def init_columns(self):
-        columns = super().init_columns()
 
-        columns.update({
-            'Область': {'type': 'handle', 'func': self.state, 'letter': 'B', 'width': 19.35},
-            'Район': {'type': 'simple', 'rel_col': 'City', 'letter': 'C', 'width': 17.36},
-            'Господарство': {'type': 'handle', 'func': self.household, 'letter': 'D', 'width': 22.80},
-            'GPS-координати поля': {'type': 'handle', 'func': self.gps_coordinates, 'letter': 'E', 'width': 28.53},
-            'COMPANY': {'type': 'simple', 'rel_col': 'Hybrid Company Name', 'letter': 'F', 'width': 15.41},
-            'HYBRIDS': {'type': 'simple', 'rel_col': 'Hybrid Name', 'letter': 'G', 'width': 20.24},
-            'Обробіток грунту': {'type': 'simple', 'rel_col': 'PTL_C', 'letter': 'H', 'width': 15.77},
-            'Густота на момент\nзбирання, тис/га': {'type': 'simple', 'rel_col': 'HAVPN', 'letter': 'I', 'width': 19.92},
-            'Кіл-ть\nрядків': {'type': 'simple', 'rel_col': 'Number of rows', 'letter': 'J', 'width': 8.57},
-            'Довжина\nділянки': {'type': 'simple', 'rel_col': 'Plot Length', 'letter': 'K', 'width': 8.57},
-            'Площа, га': {'type': 'handle', 'func': self.area_hectares, 'letter': 'L', 'width': 10.0, 'style': {'number_format': '0.0000'}},
-            'Вага з\nділянки, кг': {'type': 'simple', 'rel_col': 'GWTPN', 'letter': 'M', 'width': 10.65},
-            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': {'type': 'handle', 'func': self.yield_bunker_weight_field, 'letter': 'N', 'width': 20.53, 'style': {'number_format': '0.00'}},
-            'Harvesting moisture,\n% Вологість': {'type': 'simple', 'rel_col': 'GMSTP', 'letter': 'O', 'width': 18.29},
-            'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': {'type': 'handle', 'func': self.yield_recalculation_field_7, 'letter': 'P', 'width': 19.80, 'style': {'number_format': '0.00'}},
-            'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': {'type': 'handle', 'func': self.yield_recalculation_field_8, 'letter': 'Q', 'width': 19.80, 'style': {'number_format': '0.00'}},
-            'Попередник': {'type': 'simple', 'rel_col': 'Previous Crop', 'letter': 'R', 'width': 16.71},
-            'Дата посіву': {'type': 'simple', 'rel_col': 'Date of Planting', 'letter': 'S', 'width': 11.10},
-            'Дата збирання': {'type': 'simple', 'rel_col': 'Date of Harvest', 'letter': 'T', 'width': 13.74},
-            'ПІБ менеджера,\nщо створив протокол': {'type': 'simple', 'rel_col': 'Username', 'letter': 'U', 'width': 22.03},
-            'Тип досліду\n(Demo/SBS/Strip)': {'type': 'simple', 'rel_col': 'Trial type', 'letter': 'V', 'width': 15.33},
-            'Ширина\nміжряддя': {'type': 'simple', 'rel_col': 'Row spacing', 'letter': 'W', 'width': 16.63},
-            'Коментарі': {'type': 'handle', 'func': None, 'letter': 'X', 'width': 35.20}
-        })
-
-        return columns
-
+class OilSeedCropBook(BaseBook):
     def state(self, row_dict):
         rel_col = 'State'
         value = row_dict.get(rel_col, '')
@@ -204,7 +220,8 @@ class AgroBookSunflower(BaseBook):
         try:
             value = float(value)
         except ValueError:
-            raise ValueError(f'Дані {value} не можуть бути конвертовані в число')
+            raise ValueError(
+                f'Дані {value} не можуть бути конвертовані в число')
         return value
 
     def calculate_the_area_from_hrvar(self, row_dict):
@@ -219,7 +236,7 @@ class AgroBookSunflower(BaseBook):
         if number_of_rows is None or length_of_plot is None:
             area = self.calculate_the_area_from_hrvar(row_dict)
         else:
-            area = f'=J{self.num_rows}*0.7*K{self.num_rows}/10000'
+            area = self.calculate_the_area_by_formula()
 
         return area
 
@@ -232,6 +249,99 @@ class AgroBookSunflower(BaseBook):
     def yield_recalculation_field_8(self, row_dict):
         return f'=N{self.num_rows}*((100-O{self.num_rows})/92)'
 
+    def calculate_yield_bunker_weight(self, row_dict):
+        return f'=Q{self.num_rows}/(P{self.num_rows}*100)'
 
-class AgroBookRapeSeed(BaseBook):
-    pass
+    def yield_recalculation_field_9(self, row_dict):
+        return f'=R{self.num_rows}*((100-S{self.num_rows})/91)'
+
+
+class AgroBookSunflower(OilSeedCropBook):
+    def init_columns(self):
+        columns = super().init_columns()
+
+        columns.update({
+            'Область': self.get_column_from_lib('Область', func=self.state, letter='B'),
+            'Район': self.get_column_from_lib('Район', rel_col='City', letter='C'),
+            'Господарство': self.get_column_from_lib('Господарство', func=self.household, letter='D'),
+            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='E'),
+            'COMPANY': self.get_column_from_lib('COMPANY', rel_col='Hybrid Company Name', letter='F'),
+            'HYBRIDS': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='G'),
+            'Обробіток грунту': self.get_column_from_lib('Обробіток грунту', rel_col='PTL_C', letter='H'),
+            'Густота на момент\nзбирання, тис/га': self.get_column_from_lib('Густота на момент\nзбирання, тис/га', rel_col='HAVPN', letter='I'),
+            'Кіл-ть\nрядків': self.get_column_from_lib('Кіл-ть\nрядків', rel_col='Number of rows', letter='J'),
+            'Довжина\nділянки': self.get_column_from_lib('Довжина\nділянки', rel_col='Plot Length', letter='K'),
+            'Площа, га': self.get_column_from_lib('Площа, га', func=self.area_hectares, letter='L'),
+            'Вага з\nділянки, кг': self.get_column_from_lib('Вага з\nділянки, кг', rel_col='GWTPN', letter='M'),
+            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': self.get_column_from_lib('YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага', func=self.yield_bunker_weight_field, letter='N'),
+            'Harvesting moisture,\n% Вологість': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='O'),
+            'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (7 %) (UA)', func=self.yield_recalculation_field_7, letter='P'),
+            'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (8 %) (F)', func=self.yield_recalculation_field_8, letter='Q'),
+            'Попередник': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='R'),
+            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='S'),
+            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='T'),
+            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='U'),
+            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='V'),
+            'Ширина\nміжряддя': self.get_column_from_lib('Ширина\nміжряддя', rel_col='Row spacing', letter='W'),
+            'Коментарі': self.get_column_from_lib('Коментарі', func=None, letter='X')
+        })
+
+        return columns
+
+    def calculate_the_area_by_formula(self):
+        return f'=J{self.num_rows}*0.7*K{self.num_rows}/10000'
+
+
+class AgroBookRapeSeed(OilSeedCropBook):
+    def init_columns(self):
+        columns = super().init_columns()
+
+        sales_manager_full_name = self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='U')
+        sales_manager_full_name['width'] = 26.48
+
+        soil_processing = self.get_column_from_lib('Обробіток грунту', rel_col='PTL_C', letter='I')
+        soil_processing['width'] = 20.63
+
+        columns.update({
+            'Область': self.get_column_from_lib('Область', func=self.state, letter='B'),
+            'Район': self.get_column_from_lib('Район', rel_col='City', letter='C'),
+            'Господарство': self.get_column_from_lib('Господарство', func=self.household, letter='D'),
+            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='E'),
+            'Компанія': self.get_column_from_lib('COMPANY', rel_col='Hybrid Company Name', letter='F'),
+            'Гібрид': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='G'),
+            'Попередник': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='H'),
+            'Обробіток грунту': soil_processing,
+            'Тип грунту': self.get_column_from_lib('Тип грунту', rel_col='USDAS', letter='J'),
+            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of planting', letter='K'),
+            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='L'),
+            'Ширина\nміжряддя,\nсм': self.get_column_from_lib('Ширина\nміжряддя', func=None, letter='M'),
+            'Довжина\nділянки,\nм': self.get_column_from_lib('Довжина\nділянки', rel_col='Plot Length', letter='N'),
+            'Ширина\nділянки,\nм': self.get_column_from_lib('Ширина\nділянки', rel_col='Plot Width', letter='O'),
+            'Площа, га': self.get_column_from_lib('Площа, га', func=self.area_hectares, letter='P'),
+            'Вага з\nділянки, кг': self.get_column_from_lib('Вага з\nділянки, кг', rel_col='USY', letter='Q'),
+            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': self.get_column_from_lib('YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага', func=self.calculate_yield_bunker_weight, letter='R'),
+            'Вологість на час\nзбирання, %': self.get_column_from_lib('Вологість на час\nзбирання, %', rel_col='HSH', letter='S'),
+            'Урожайність у\nперерахунку на базисну\nвологість (9 %) (UA)': self.get_column_from_lib('Урожайність у\nперерахунку на базисну\nвологість (9 %) (UA)', func=self.yield_recalculation_field_9, letter='T'),
+            'ПІБ Менеджер з продажів': sales_manager_full_name,
+            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='V'),
+        })
+
+        return columns
+
+    def calculate_the_area_by_formula(self):
+        return f'=(N{self.num_rows}*O{self.num_rows})/10000'
+
+    def area_hectares(self, row_dict):
+        width_of_plot = row_dict.get('Plot Width', None)
+        length_of_plot = row_dict.get('Plot Length', None)
+
+        if width_of_plot is None or length_of_plot is None:
+            area = self.calculate_the_area_from_hrvar(row_dict)
+        else:
+            area = self.calculate_the_area_by_formula()
+
+        return area
+
+    def household(self, row_dict):
+        value_row = row_dict.get('Custom trial name', None)
+        return value_row

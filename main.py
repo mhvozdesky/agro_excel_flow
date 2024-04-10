@@ -73,8 +73,6 @@ def fill_book(agro_book, file_list):
         data_processor.update_progress(progress)
 
 
-
-
 def file_exists(file_path):
     if not os.path.exists(file_path):
         raise ValueError(f'Схоже, що файла {file_path} не існує')
@@ -114,102 +112,23 @@ def main(*, file_list, crops, file_path=None, dir_path=None):
     agro_book.save_book(FILE_NAME, DATA_DIR)
 
 
-def find_element(input_file_list):
-    end = False
-    files = set()
-    for file in input_file_list:
-        try:
-            wb = load_workbook(file)
-        except Exception:
-            print
-        ws = get_ws(wb)
-        max_row = ws.max_row
-        for i in range(1, max_row + 1):
-            cell = ws[f'I{i}']
-            if 'Пісчанська АФ ТОВ' in cell.value:
-                files.add(file)
-
-    for i in files:
-        print(i)
-
-
-def test():
-    # font = Font(name='Calibri', size=10)
-    # font_bold = Font(name='Calibri', size=10, bold=True)
-    # border = Border(
-    #     left=Side(border_style='thin', color='00000000'),
-    #     right=Side(border_style='thin', color='00000000'),
-    #     top=Side(border_style='thin', color='00000000'),
-    #     bottom=Side(border_style='thin', color='00000000'),
-    # )
-    # alignment = Alignment(horizontal='center', vertical='center')
-
-    styles = Styles()
-
-    wb = Workbook()
-    ws = wb.active
-
-    a1 = ws['A1']
-    b1 = ws['B1']
-
-    a2 = ws['A2']
-    b2 = ws['B2']
-    print
-
-    a1.value = 'name'
-    b1.value = 'price'
-
-    a2.value = 'spam'
-    b2.value = 132.15
-
-    for cell in [a1, b1, a2, b2]:
-        if cell in [a1, b1]:
-            cell.font = styles.font_bold
-        else:
-            cell.font = styles.font
-        cell.border = styles.border
-        cell.alignment = styles.alignment
-
-    ws['C1'].value = 'spam'
-    ws['C1'].font = styles.font_bold
-
-    wb.save(f'{DATA_DIR}/test1.xlsx')
-
-
 if __name__ == '__main__':
-    # import resources_rc
-    #
-    # if getattr(sys, 'frozen', False):
-    #     application_path = sys._MEIPASS
-    # else:
-    #     application_path = os.path.dirname(os.path.abspath(__file__))
-    #
-    # style_path = os.path.join(application_path, 'ui/style.gss')
-    #
-    # with open(style_path) as style_file:
-    #     style_data = style_file.read()
-    #
-    # app = QApplication(sys.argv)
-    # app.setStyleSheet(style_data)
-    #
-    # window = AgroMainWindow()
-    # window.show()
-    #
-    # sys.exit(app.exec())
+    import resources_rc
 
-    crops = CropsRadio.rapeseed.name
+    if getattr(sys, 'frozen', False):
+        application_path = sys._MEIPASS
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
 
-    data_dir = os.getenv('DATA_DIR', None)
+    style_path = os.path.join(application_path, 'ui/style.gss')
 
-    dirpath, dirnames, filenames = next(os.walk(f'{data_dir}/input_data/'))
-    input_file_list = [f'{data_dir}/input_data/240211_UASEWR14062023.xlsx']
-    # input_file_list = [f'{dirpath}{file_name}' for file_name in filenames if file_name.endswith('xlsx')]
+    with open(style_path) as style_file:
+        style_data = style_file.read()
 
-    # find_element(input_file_list)
+    app = QApplication(sys.argv)
+    app.setStyleSheet(style_data)
 
-    main_file = f'{data_dir}/Aggregate_Yield.xlsx'
+    window = AgroMainWindow()
+    window.show()
 
-    main(file_list=input_file_list, dir_path=data_dir, crops=operation)
-    # main(file_list=input_file_list, file_path=main_file)
-
-    # test()
+    sys.exit(app.exec())
