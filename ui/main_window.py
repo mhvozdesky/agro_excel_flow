@@ -94,7 +94,8 @@ class DataProcessor(QThread, metaclass=SingletonQThreadMeta):
             main(
                 file_list=self.input_file_list,
                 file_path=self.file_path,
-                dir_path=self.dir_path
+                dir_path=self.dir_path,
+                crops=self.crops
             )
 
             self.send_msg('Обробка завершена', type_msg='success')

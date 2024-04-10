@@ -3,7 +3,7 @@ from openpyxl import Workbook, load_workbook
 from styles import Styles
 
 
-class AgroBook:
+class BaseBook:
     sheet_name = 'aggregate_yield'
 
     def __init__(self, file_path=None):
@@ -11,34 +11,30 @@ class AgroBook:
         self.ws = None
         self.num_rows = 0
         self.styles = Styles()
-        self.columns = {
-            'NN': {'type': 'handle', 'func': self.line_number, 'letter': 'A', 'width': 6.54},
-            'Область': {'type': 'handle', 'func': self.state, 'letter': 'B', 'width': 19.35},
-            'Район': {'type': 'simple', 'rel_col': 'City', 'letter': 'C', 'width': 17.36},
-            'Господарство': {'type': 'handle', 'func': self.household, 'letter': 'D', 'width': 22.80},
-            'GPS-координати поля': {'type': 'handle', 'func': self.gps_coordinates, 'letter': 'E', 'width': 28.53},
-            'COMPANY': {'type': 'simple', 'rel_col': 'Hybrid Company Name', 'letter': 'F', 'width': 15.41},
-            'HYBRIDS': {'type': 'simple', 'rel_col': 'Hybrid Name', 'letter': 'G', 'width': 20.24},
-            'Обробіток грунту': {'type': 'simple', 'rel_col': 'PTL_C', 'letter': 'H', 'width': 15.77},
-            'Густота на момент\nзбирання, тис/га': {'type': 'simple', 'rel_col': 'HAVPN', 'letter': 'I', 'width': 19.92},
-            'Кіл-ть\nрядків': {'type': 'simple', 'rel_col': 'Number of rows', 'letter': 'J', 'width': 8.57},
-            'Довжина\nділянки': {'type': 'simple', 'rel_col': 'Plot Length', 'letter': 'K', 'width': 8.57},
-            'Площа, га': {'type': 'handle', 'func': self.area_hectares, 'letter': 'L', 'width': 10.0, 'style': {'number_format': '0.0000'}},
-            'Вага з\nділянки, кг': {'type': 'simple', 'rel_col': 'GWTPN', 'letter': 'M', 'width': 10.65},
-            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': {'type': 'handle', 'func': self.yield_bunker_weight_field, 'letter': 'N', 'width': 20.53, 'style': {'number_format': '0.00'}},
-            'Harvesting moisture,\n% Вологість': {'type': 'simple', 'rel_col': 'GMSTP', 'letter': 'O', 'width': 18.29},
-            'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': {'type': 'handle', 'func': self.yield_recalculation_field_7, 'letter': 'P', 'width': 19.80, 'style': {'number_format': '0.00'}},
-            'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': {'type': 'handle', 'func': self.yield_recalculation_field_8, 'letter': 'Q', 'width': 19.80, 'style': {'number_format': '0.00'}},
-            'Попередник': {'type': 'simple', 'rel_col': 'Previous Crop', 'letter': 'R', 'width': 16.71},
-            'Дата посіву': {'type': 'simple', 'rel_col': 'Date of Planting', 'letter': 'S', 'width': 11.10},
-            'Дата збирання': {'type': 'simple', 'rel_col': 'Date of Harvest', 'letter': 'T', 'width': 13.74},
-            'ПІБ менеджера,\nщо створив протокол': {'type': 'simple', 'rel_col': 'Username', 'letter': 'U', 'width': 22.03},
-            'Тип досліду\n(Demo/SBS/Strip)': {'type': 'simple', 'rel_col': 'Trial type', 'letter': 'V', 'width': 15.33},
-            'Ширина\nміжряддя': {'type': 'simple', 'rel_col': 'Row spacing', 'letter': 'W', 'width': 16.63},
-            'Коментарі': {'type': 'handle', 'func': None, 'letter': 'X', 'width': 35.20}
-        }
+        self.columns = self.init_columns()
 
         self.init_workbook(file_path)
+
+    def init_columns(self):
+        return {'NN': {'type': 'handle', 'func': self.line_number, 'letter': 'A', 'width': 6.54}}
+
+    def init_workbook(self, file_path):
+        if file_path is None:
+            self.wb = Workbook()
+            self.ws = self.get_ws()
+            self.num_rows = 1
+
+            self.init_default_columns()
+        else:
+            try:
+                self.wb = load_workbook(file_path)
+            except Exception:
+                raise RuntimeError(f'Не вдалось відкрити файл {file_path}')
+
+            self.ws = self.get_ws_from_file(self.wb)
+            self.num_rows = self.ws.max_row
+
+            self.check_file_structure()
 
     def get_ws(self):
         ws = self.wb.active
@@ -64,24 +60,6 @@ class AgroBook:
         for i, col_name in enumerate(default_column_list):
             if col_name != file_column[i]:
                 raise ValueError(f'Неправильна структура файла. Проблема в назві колонки {i+1}')
-
-    def init_workbook(self, file_path):
-        if file_path is None:
-            self.wb = Workbook()
-            self.ws = self.get_ws()
-            self.num_rows = 1
-
-            self.init_default_columns()
-        else:
-            try:
-                self.wb = load_workbook(file_path)
-            except Exception:
-                raise RuntimeError(f'Не вдалось відкрити файл {file_path}')
-
-            self.ws = self.get_ws_from_file(self.wb)
-            self.num_rows = self.ws.max_row
-
-            self.check_file_structure()
 
     def init_default_columns(self):
         for column_name, data in self.columns.items():
@@ -144,15 +122,48 @@ class AgroBook:
     def save_book(self, file_name, file_dir):
         self.wb.save(f'{file_dir}/{file_name}')
 
+    def line_number(self, row_dict):
+        return self.num_rows - 1
+
+
+class AgroBookSunflower(BaseBook):
+    def init_columns(self):
+        columns = super().init_columns()
+
+        columns.update({
+            'Область': {'type': 'handle', 'func': self.state, 'letter': 'B', 'width': 19.35},
+            'Район': {'type': 'simple', 'rel_col': 'City', 'letter': 'C', 'width': 17.36},
+            'Господарство': {'type': 'handle', 'func': self.household, 'letter': 'D', 'width': 22.80},
+            'GPS-координати поля': {'type': 'handle', 'func': self.gps_coordinates, 'letter': 'E', 'width': 28.53},
+            'COMPANY': {'type': 'simple', 'rel_col': 'Hybrid Company Name', 'letter': 'F', 'width': 15.41},
+            'HYBRIDS': {'type': 'simple', 'rel_col': 'Hybrid Name', 'letter': 'G', 'width': 20.24},
+            'Обробіток грунту': {'type': 'simple', 'rel_col': 'PTL_C', 'letter': 'H', 'width': 15.77},
+            'Густота на момент\nзбирання, тис/га': {'type': 'simple', 'rel_col': 'HAVPN', 'letter': 'I', 'width': 19.92},
+            'Кіл-ть\nрядків': {'type': 'simple', 'rel_col': 'Number of rows', 'letter': 'J', 'width': 8.57},
+            'Довжина\nділянки': {'type': 'simple', 'rel_col': 'Plot Length', 'letter': 'K', 'width': 8.57},
+            'Площа, га': {'type': 'handle', 'func': self.area_hectares, 'letter': 'L', 'width': 10.0, 'style': {'number_format': '0.0000'}},
+            'Вага з\nділянки, кг': {'type': 'simple', 'rel_col': 'GWTPN', 'letter': 'M', 'width': 10.65},
+            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': {'type': 'handle', 'func': self.yield_bunker_weight_field, 'letter': 'N', 'width': 20.53, 'style': {'number_format': '0.00'}},
+            'Harvesting moisture,\n% Вологість': {'type': 'simple', 'rel_col': 'GMSTP', 'letter': 'O', 'width': 18.29},
+            'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': {'type': 'handle', 'func': self.yield_recalculation_field_7, 'letter': 'P', 'width': 19.80, 'style': {'number_format': '0.00'}},
+            'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': {'type': 'handle', 'func': self.yield_recalculation_field_8, 'letter': 'Q', 'width': 19.80, 'style': {'number_format': '0.00'}},
+            'Попередник': {'type': 'simple', 'rel_col': 'Previous Crop', 'letter': 'R', 'width': 16.71},
+            'Дата посіву': {'type': 'simple', 'rel_col': 'Date of Planting', 'letter': 'S', 'width': 11.10},
+            'Дата збирання': {'type': 'simple', 'rel_col': 'Date of Harvest', 'letter': 'T', 'width': 13.74},
+            'ПІБ менеджера,\nщо створив протокол': {'type': 'simple', 'rel_col': 'Username', 'letter': 'U', 'width': 22.03},
+            'Тип досліду\n(Demo/SBS/Strip)': {'type': 'simple', 'rel_col': 'Trial type', 'letter': 'V', 'width': 15.33},
+            'Ширина\nміжряддя': {'type': 'simple', 'rel_col': 'Row spacing', 'letter': 'W', 'width': 16.63},
+            'Коментарі': {'type': 'handle', 'func': None, 'letter': 'X', 'width': 35.20}
+        })
+
+        return columns
+
     def state(self, row_dict):
         rel_col = 'State'
         value = row_dict.get(rel_col, '')
         if value is None:
             return None
         return value.replace('область', '').strip()
-
-    def line_number(self, row_dict):
-        return self.num_rows - 1
 
     def household(self, row_dict):
         value_row = row_dict.get('Custom trial name', '')
@@ -222,3 +233,5 @@ class AgroBook:
         return f'=N{self.num_rows}*((100-O{self.num_rows})/92)'
 
 
+class AgroBookRapeSeed(BaseBook):
+    pass

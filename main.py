@@ -8,9 +8,9 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6 import QtWidgets
 
 from styles import Styles
-from current_books import AgroBook
+from current_books import AgroBookSunflower, AgroBookRapeSeed
 from settings import DATA_DIR, FILE_NAME
-from ui.main_window import AgroMainWindow, DataProcessor
+from ui.main_window import AgroMainWindow, DataProcessor, CropsRadio
 
 
 def get_file_name_by_path(file_path):
@@ -97,11 +97,19 @@ def init_file_name_and_data_dir(file_path, dir_path):
         DATA_DIR = dir_path
 
 
-def main(*, file_list, file_path=None, dir_path=None):
+def main(*, file_list, crops, file_path=None, dir_path=None):
     if file_path is None and dir_path is None:
         raise ValueError("Має бути вказано або ім'я файла або директорія")
+
+    books_mapping = {
+        CropsRadio.sunflower.name: AgroBookSunflower,
+        CropsRadio.rapeseed.name: AgroBookRapeSeed
+    }
+
+    book = books_mapping.get(crops)
+
     init_file_name_and_data_dir(file_path, dir_path)
-    agro_book = AgroBook(file_path)
+    agro_book = book(file_path)
     fill_book(agro_book, file_list)
     agro_book.save_book(FILE_NAME, DATA_DIR)
 
@@ -169,22 +177,39 @@ def test():
 
 
 if __name__ == '__main__':
-    import resources_rc
+    # import resources_rc
+    #
+    # if getattr(sys, 'frozen', False):
+    #     application_path = sys._MEIPASS
+    # else:
+    #     application_path = os.path.dirname(os.path.abspath(__file__))
+    #
+    # style_path = os.path.join(application_path, 'ui/style.gss')
+    #
+    # with open(style_path) as style_file:
+    #     style_data = style_file.read()
+    #
+    # app = QApplication(sys.argv)
+    # app.setStyleSheet(style_data)
+    #
+    # window = AgroMainWindow()
+    # window.show()
+    #
+    # sys.exit(app.exec())
 
-    if getattr(sys, 'frozen', False):
-        application_path = sys._MEIPASS
-    else:
-        application_path = os.path.dirname(os.path.abspath(__file__))
+    crops = CropsRadio.rapeseed.name
 
-    style_path = os.path.join(application_path, 'ui/style.gss')
+    data_dir = os.getenv('DATA_DIR', None)
 
-    with open(style_path) as style_file:
-        style_data = style_file.read()
+    dirpath, dirnames, filenames = next(os.walk(f'{data_dir}/input_data/'))
+    input_file_list = [f'{data_dir}/input_data/240211_UASEWR14062023.xlsx']
+    # input_file_list = [f'{dirpath}{file_name}' for file_name in filenames if file_name.endswith('xlsx')]
 
-    app = QApplication(sys.argv)
-    app.setStyleSheet(style_data)
+    # find_element(input_file_list)
 
-    window = AgroMainWindow()
-    window.show()
+    main_file = f'{data_dir}/Aggregate_Yield.xlsx'
 
-    sys.exit(app.exec())
+    main(file_list=input_file_list, dir_path=data_dir, crops=operation)
+    # main(file_list=input_file_list, file_path=main_file)
+
+    # test()
