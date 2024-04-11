@@ -94,7 +94,8 @@ class DataProcessor(QThread, metaclass=SingletonQThreadMeta):
             main(
                 file_list=self.input_file_list,
                 file_path=self.file_path,
-                dir_path=self.dir_path
+                dir_path=self.dir_path,
+                crops=self.crops
             )
 
             self.send_msg('Обробка завершена', type_msg='success')
@@ -143,7 +144,7 @@ class AgroMainWindow(QWidget):
 
         self.setWindowTitle(f'Agro Flow v{VERSION}')
         self.setContentsMargins(20, 0, 20, 20)
-        self.resize(810, 790)
+        self.resize(810, 614)
         self.setWindowIcon(QtGui.QIcon(':/ui/images/icon3.ico'))
 
         main_layout = QVBoxLayout()
@@ -274,7 +275,6 @@ class AgroMainWindow(QWidget):
         radio_rapeseed = QRadioButton(CropsRadio.rapeseed.value)
         radio_rapeseed.setProperty('name', CropsRadio.rapeseed.name)
         radio_rapeseed.setProperty('class', 'last_radio')
-        radio_rapeseed.setDisabled(True)
 
         radio_corn = QRadioButton(CropsRadio.corn.value)
         radio_corn.setProperty('name', CropsRadio.corn.name)

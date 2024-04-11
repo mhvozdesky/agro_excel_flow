@@ -26,3 +26,8 @@ class Styles:
 
     def _get_alignment(self):
         return Alignment(horizontal='center', vertical='center')
+
+    def wrap_text(self):
+        alignment = self._get_alignment()
+        alignment.wrap_text = True
+        return alignment
