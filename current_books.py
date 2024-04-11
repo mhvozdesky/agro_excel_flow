@@ -1,6 +1,10 @@
 import sys
+import os
 from openpyxl import Workbook, load_workbook
 from styles import Styles
+
+
+LS = os.linesep
 
 
 class BaseBook:
@@ -14,24 +18,24 @@ class BaseBook:
         'HYBRIDS': {'type': 'simple', 'width': 20.24},
         'Обробіток грунту': {'type': 'simple', 'width': 15.77},
         'Тип грунту': {'type': 'simple', 'width': 15.77},
-        'Густота на момент\nзбирання, тис/га': {'type': 'simple', 'width': 19.92},
-        'Кіл-ть\nрядків': {'type': 'simple', 'width': 8.57},
-        'Довжина\nділянки': {'type': 'simple', 'width': 8.57},
+        f'Густота на момент{LS}збирання, тис/га': {'type': 'simple', 'width': 19.92},
+        f'Кіл-ть{LS}рядків': {'type': 'simple', 'width': 8.57},
+        f'Довжина{LS}ділянки': {'type': 'simple', 'width': 8.57},
         'Площа, га': {'type': 'handle', 'width': 10.0, 'style': {'number_format': '0.0000'}},
-        'Вага з\nділянки, кг': {'type': 'simple', 'width': 10.65},
-        'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': {'type': 'handle', 'width': 20.53, 'style': {'number_format': '0.00'}},
-        'Harvesting moisture,\n% Вологість': {'type': 'simple', 'width': 18.29},
-        'Вологість на час\nзбирання, %': {'type': 'simple', 'width': 18.29},
-        'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': {'type': 'handle', 'width': 19.80, 'style': {'number_format': '0.00'}},
-        'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': {'type': 'handle', 'width': 19.80, 'style': {'number_format': '0.00'}},
-        'Урожайність у\nперерахунку на базисну\nвологість (9 %) (UA)': {'type': 'handle', 'width': 22.47, 'style': {'number_format': '0.00'}},
+        f'Вага з{LS}ділянки, кг': {'type': 'simple', 'width': 10.65},
+        f'YIELD,{LS}BUNKER WEIGHT (q/ha){LS}Бункерна вага': {'type': 'handle', 'width': 20.53, 'style': {'number_format': '0.00'}},
+        f'Harvesting moisture,{LS}% Вологість': {'type': 'simple', 'width': 18.29},
+        f'Вологість на час{LS}збирання, %': {'type': 'simple', 'width': 18.29},
+        f'Re-calculation{LS}of yield at basis{LS}moisture (7 %) (UA)': {'type': 'handle', 'width': 19.80, 'style': {'number_format': '0.00'}},
+        f'Re-calculation{LS}of yield at basis{LS}moisture (8 %) (F)': {'type': 'handle', 'width': 19.80, 'style': {'number_format': '0.00'}},
+        f'Урожайність у{LS}перерахунку на базисну{LS}вологість (9 %) (UA)': {'type': 'handle', 'width': 22.47, 'style': {'number_format': '0.00'}},
         'Попередник': {'type': 'simple', 'width': 16.71},
         'Дата посіву': {'type': 'simple', 'width': 11.10},
         'Дата збирання': {'type': 'simple', 'width': 13.74},
-        'ПІБ менеджера,\nщо створив протокол': {'type': 'simple', 'width': 22.03},
-        'Тип досліду\n(Demo/SBS/Strip)': {'type': 'simple', 'width': 15.33},
-        'Ширина\nміжряддя': {'type': 'simple', 'width': 16.63},
-        'Ширина\nділянки': {'type': 'simple', 'width': 16.63},
+        f'ПІБ менеджера,{LS}що створив протокол': {'type': 'simple', 'width': 22.03},
+        f'Тип досліду{LS}(Demo/SBS/Strip)': {'type': 'simple', 'width': 15.33},
+        f'Ширина{LS}міжряддя': {'type': 'simple', 'width': 16.63},
+        f'Ширина{LS}ділянки': {'type': 'simple', 'width': 16.63},
         'Коментарі': {'type': 'handle', 'width': 35.20}
     }
 
@@ -268,21 +272,21 @@ class AgroBookSunflower(OilSeedCropBook):
             'COMPANY': self.get_column_from_lib('COMPANY', rel_col='Hybrid Company Name', letter='F'),
             'HYBRIDS': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='G'),
             'Обробіток грунту': self.get_column_from_lib('Обробіток грунту', rel_col='PTL_C', letter='H'),
-            'Густота на момент\nзбирання, тис/га': self.get_column_from_lib('Густота на момент\nзбирання, тис/га', rel_col='HAVPN', letter='I'),
-            'Кіл-ть\nрядків': self.get_column_from_lib('Кіл-ть\nрядків', rel_col='Number of rows', letter='J'),
-            'Довжина\nділянки': self.get_column_from_lib('Довжина\nділянки', rel_col='Plot Length', letter='K'),
+            f'Густота на момент{LS}збирання, тис/га': self.get_column_from_lib(f'Густота на момент{LS}збирання, тис/га', rel_col='HAVPN', letter='I'),
+            f'Кіл-ть{LS}рядків': self.get_column_from_lib(f'Кіл-ть{LS}рядків', rel_col='Number of rows', letter='J'),
+            f'Довжина{LS}ділянки': self.get_column_from_lib(f'Довжина{LS}ділянки', rel_col='Plot Length', letter='K'),
             'Площа, га': self.get_column_from_lib('Площа, га', func=self.area_hectares, letter='L'),
-            'Вага з\nділянки, кг': self.get_column_from_lib('Вага з\nділянки, кг', rel_col='GWTPN', letter='M'),
-            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': self.get_column_from_lib('YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага', func=self.yield_bunker_weight_field, letter='N'),
-            'Harvesting moisture,\n% Вологість': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='O'),
-            'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (7 %) (UA)', func=self.yield_recalculation_field_7, letter='P'),
-            'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (8 %) (F)', func=self.yield_recalculation_field_8, letter='Q'),
+            f'Вага з{LS}ділянки, кг': self.get_column_from_lib(f'Вага з{LS}ділянки, кг', rel_col='GWTPN', letter='M'),
+            f'YIELD,{LS}BUNKER WEIGHT (q/ha){LS}Бункерна вага': self.get_column_from_lib(f'YIELD,{LS}BUNKER WEIGHT (q/ha){LS}Бункерна вага', func=self.yield_bunker_weight_field, letter='N'),
+            f'Harvesting moisture,{LS}% Вологість': self.get_column_from_lib(f'Harvesting moisture,{LS}% Вологість', rel_col='GMSTP', letter='O'),
+            f'Re-calculation{LS}of yield at basis{LS}moisture (7 %) (UA)': self.get_column_from_lib(f'Re-calculation{LS}of yield at basis{LS}moisture (7 %) (UA)', func=self.yield_recalculation_field_7, letter='P'),
+            f'Re-calculation{LS}of yield at basis{LS}moisture (8 %) (F)': self.get_column_from_lib(f'Re-calculation{LS}of yield at basis{LS}moisture (8 %) (F)', func=self.yield_recalculation_field_8, letter='Q'),
             'Попередник': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='R'),
             'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='S'),
             'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='T'),
-            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='U'),
-            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='V'),
-            'Ширина\nміжряддя': self.get_column_from_lib('Ширина\nміжряддя', rel_col='Row spacing', letter='W'),
+            f'ПІБ менеджера,{LS}що створив протокол': self.get_column_from_lib(f'ПІБ менеджера,{LS}що створив протокол', rel_col='Username', letter='U'),
+            f'Тип досліду{LS}(Demo/SBS/Strip)': self.get_column_from_lib(f'Тип досліду{LS}(Demo/SBS/Strip)', rel_col='Trial type', letter='V'),
+            f'Ширина{LS}міжряддя': self.get_column_from_lib(f'Ширина{LS}міжряддя', rel_col='Row spacing', letter='W'),
             'Коментарі': self.get_column_from_lib('Коментарі', func=None, letter='X')
         })
 
@@ -296,7 +300,7 @@ class AgroBookRapeSeed(OilSeedCropBook):
     def init_columns(self):
         columns = super().init_columns()
 
-        sales_manager_full_name = self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='U')
+        sales_manager_full_name = self.get_column_from_lib(f'ПІБ менеджера,{LS}що створив протокол', rel_col='Username', letter='U')
         sales_manager_full_name['width'] = 26.48
 
         soil_processing = self.get_column_from_lib('Обробіток грунту', rel_col='PTL_C', letter='I')
@@ -314,16 +318,16 @@ class AgroBookRapeSeed(OilSeedCropBook):
             'Тип грунту': self.get_column_from_lib('Тип грунту', rel_col='USDAS', letter='J'),
             'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of planting', letter='K'),
             'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='L'),
-            'Ширина\nміжряддя,\nсм': self.get_column_from_lib('Ширина\nміжряддя', func=None, letter='M'),
-            'Довжина\nділянки,\nм': self.get_column_from_lib('Довжина\nділянки', rel_col='Plot Length', letter='N'),
-            'Ширина\nділянки,\nм': self.get_column_from_lib('Ширина\nділянки', rel_col='Plot Width', letter='O'),
+            f'Ширина{LS}міжряддя,{LS}см': self.get_column_from_lib(f'Ширина{LS}міжряддя', func=None, letter='M'),
+            f'Довжина{LS}ділянки,{LS}м': self.get_column_from_lib(f'Довжина{LS}ділянки', rel_col='Plot Length', letter='N'),
+            f'Ширина{LS}ділянки,{LS}м': self.get_column_from_lib(f'Ширина{LS}ділянки', rel_col='Plot Width', letter='O'),
             'Площа, га': self.get_column_from_lib('Площа, га', func=self.area_hectares, letter='P'),
-            'Вага з\nділянки, кг': self.get_column_from_lib('Вага з\nділянки, кг', rel_col='USY', letter='Q'),
-            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': self.get_column_from_lib('YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага', func=self.calculate_yield_bunker_weight, letter='R'),
-            'Вологість на час\nзбирання, %': self.get_column_from_lib('Вологість на час\nзбирання, %', rel_col='HSH', letter='S'),
-            'Урожайність у\nперерахунку на базисну\nвологість (9 %) (UA)': self.get_column_from_lib('Урожайність у\nперерахунку на базисну\nвологість (9 %) (UA)', func=self.yield_recalculation_field_9, letter='T'),
+            f'Вага з{LS}ділянки, кг': self.get_column_from_lib(f'Вага з{LS}ділянки, кг', rel_col='USY', letter='Q'),
+            f'YIELD,{LS}BUNKER WEIGHT (q/ha){LS}Бункерна вага': self.get_column_from_lib(f'YIELD,{LS}BUNKER WEIGHT (q/ha){LS}Бункерна вага', func=self.calculate_yield_bunker_weight, letter='R'),
+            f'Вологість на час{LS}збирання, %': self.get_column_from_lib(f'Вологість на час{LS}збирання, %', rel_col='HSH', letter='S'),
+            f'Урожайність у{LS}перерахунку на базисну{LS}вологість (9 %) (UA)': self.get_column_from_lib(f'Урожайність у{LS}перерахунку на базисну{LS}вологість (9 %) (UA)', func=self.yield_recalculation_field_9, letter='T'),
             'ПІБ Менеджер з продажів': sales_manager_full_name,
-            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='V'),
+            f'Тип досліду{LS}(Demo/SBS/Strip)': self.get_column_from_lib(f'Тип досліду{LS}(Demo/SBS/Strip)', rel_col='Trial type', letter='V'),
         })
 
         return columns
