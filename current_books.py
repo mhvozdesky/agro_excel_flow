@@ -123,7 +123,7 @@ class BaseBook:
     def apply_styles(self, cell):
         cell.font = self.styles.font
         cell.border = self.styles.border
-        cell.alignment = self.styles.alignment
+        cell.alignment = self.styles.wrap_text()
 
     def row_to_dict(self, row, column):
         row_dict = {}
