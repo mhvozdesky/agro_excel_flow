@@ -208,7 +208,7 @@ class OilSeedCropBook(BaseBook):
         if longitude == '' or latitude == '':
             return None
 
-        return f'{longitude},{latitude}'
+        return f'{latitude},{longitude}'
 
     def get_not_none_value(self, col_name, row_dict):
         value = row_dict.get(col_name, None)
