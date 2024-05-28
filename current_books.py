@@ -32,7 +32,13 @@ class BaseBook:
         'Тип досліду\n(Demo/SBS/Strip)': {'type': 'simple', 'width': 15.33},
         'Ширина\nміжряддя': {'type': 'simple', 'width': 16.63},
         'Ширина\nділянки': {'type': 'simple', 'width': 16.63},
-        'Коментарі': {'type': 'handle', 'width': 35.20}
+        'Коментарі': {'type': 'handle', 'width': 35.20},
+        'БР': {'type': 'handle', 'width': 8.27},
+        'Рік': {'type': 'simple', 'width': 9.37},
+        'ФАО': {'type': 'handle', 'width': 20.47},
+        'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': {'type': 'simple', 'width': 15.20},
+        'Коеф. урож SY': {'type': 'handle', 'width': 15.20},
+        'Коеф. урож SY+конк.': {'type': 'handle', 'width': 15.20},
     }
 
     def __init__(self, file_path=None):
@@ -172,24 +178,6 @@ class BaseBook:
     def calculate_the_area_by_formula(self):
         pass
 
-
-class OilSeedCropBook(BaseBook):
-    def state(self, row_dict):
-        rel_col = 'State'
-        value = row_dict.get(rel_col, '')
-        if value is None:
-            return None
-        return value.replace('область', '').strip()
-
-    def household(self, row_dict):
-        value_row = row_dict.get('Custom trial name', '')
-        if value_row is None:
-            return None
-        value = value_row.split(',')
-        if len(value) >= 4:
-            return value[3]
-        return value_row
-
     def format_coordinates(self, coordinate):
         if coordinate is None:
             return ''
@@ -209,6 +197,24 @@ class OilSeedCropBook(BaseBook):
             return None
 
         return f'{latitude},{longitude}'
+
+
+class OilSeedCropBook(BaseBook):
+    def state(self, row_dict):
+        rel_col = 'State'
+        value = row_dict.get(rel_col, '')
+        if value is None:
+            return None
+        return value.replace('область', '').strip()
+
+    def household(self, row_dict):
+        value_row = row_dict.get('Custom trial name', '')
+        if value_row is None:
+            return None
+        value = value_row.split(',')
+        if len(value) >= 4:
+            return value[3]
+        return value_row
 
     def get_not_none_value(self, col_name, row_dict):
         value = row_dict.get(col_name, None)
@@ -341,6 +347,37 @@ class AgroBookRapeSeed(OilSeedCropBook):
             area = self.calculate_the_area_by_formula()
 
         return area
+
+    def household(self, row_dict):
+        value_row = row_dict.get('Custom trial name', None)
+        return value_row
+
+
+class CornBook(BaseBook):
+    def init_columns(self):
+        columns = super().init_columns()
+        columns.update({
+            'БР': self.get_column_from_lib('БР', func=None, letter='B'),
+            'Виробник': self.get_column_from_lib('COMPANY', rel_col='Hybrid Company Name', letter='C'),
+            'Попередник\n(культура)': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='D'),
+            'Рік': self.get_column_from_lib('Рік', rel_col='Year', letter='E'),
+            'Область': self.get_column_from_lib('Область', rel_col='State', letter='F'),
+            'Район': self.get_column_from_lib('Район', func=None, letter='G'),
+            'Локація': self.get_column_from_lib('Господарство', func=self.household, letter='H'),
+            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='I'),
+            'Гібрид': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='J'),
+            'ФАО': self.get_column_from_lib('ФАО', func=None, letter='K'),
+            'Вологість зерна під час збирання %': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='L'),
+            'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': self.get_column_from_lib('Урожайність  (в перерахунку на вологість зерна 14%), ц/га', rel_col='YGSMN', letter='M'),
+            'Коеф. урож SY': self.get_column_from_lib('Коеф. урож SY', func=None, letter='N'),
+            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=None, letter='O'),
+            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='P'),
+            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='Q'),
+            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='R'),
+            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='S'),
+        })
+
+        return columns
 
     def household(self, row_dict):
         value_row = row_dict.get('Custom trial name', None)
