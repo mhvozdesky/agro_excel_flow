@@ -374,7 +374,7 @@ class CornBook(BaseBook):
             'Виробник': self.get_column_from_lib('COMPANY', rel_col=self.company_field, letter='C'),
             'Попередник\n(культура)': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='D'),
             'Рік': self.get_column_from_lib('Рік', rel_col='Year', letter='E'),
-            'Область': self.get_column_from_lib('Область', rel_col='State', letter='F'),
+            'Область': self.get_column_from_lib('Область', func=self.state, letter='F'),
             'Район': self.get_column_from_lib('Район', func=None, letter='G'),
             'Локація': self.get_column_from_lib('Господарство', func=self.household, letter='H'),
             'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='I'),
@@ -383,7 +383,7 @@ class CornBook(BaseBook):
             'Вологість зерна під час збирання %': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='L'),
             'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': self.get_column_from_lib('Урожайність  (в перерахунку на вологість зерна 14%), ц/га', rel_col=self.yield_field, letter='M'),
             'Коеф. урож SY': self.get_column_from_lib('Коеф. урож SY', func=self.crop_yield_coefficient_sy, letter='N'),
-            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=None, letter='O'),
+            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=self.crop_yield_coefficient_with_competitors, letter='O'),
             'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='P'),
             'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='Q'),
             'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='R'),
@@ -392,12 +392,25 @@ class CornBook(BaseBook):
 
         return columns
 
+    def state(self, row_dict):
+        value_row = row_dict.get('State', None)
+        return value_row
+
     def household(self, row_dict):
         value_row = row_dict.get('Custom trial name', None)
         return value_row
 
     def crop_yield_coefficient_sy(self, row_dict):
-        pass
+        if self.average_yield_sy is None:
+            return None
+
+        return f'=M{self.num_rows}/{self.average_yield_sy}'
+
+    def crop_yield_coefficient_with_competitors(self, row_dict):
+        if self.average_yield_with_competitors is None:
+            return None
+
+        return f'=M{self.num_rows}/{self.average_yield_with_competitors}'
 
     def process_input_ws(self, *args, **kwargs):
         self.average_yield_sy = None
