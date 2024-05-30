@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6 import QtWidgets
 
 from styles import Styles
-from current_books import AgroBookSunflower, AgroBookRapeSeed
+from current_books import AgroBookSunflower, AgroBookRapeSeed, CornBook
 from settings import DATA_DIR, FILE_NAME
 from ui.main_window import AgroMainWindow, DataProcessor, CropsRadio
 
@@ -53,6 +53,7 @@ def get_columns(input_ws):
 
 def process_file(agro_book, input_ws):
     columns = get_columns(input_ws)
+    agro_book.process_input_ws(input_ws=input_ws, columns=columns)
     for i, row in enumerate(input_ws.rows):
         if i == 0:
             continue
@@ -101,7 +102,8 @@ def main(*, file_list, crops, file_path=None, dir_path=None):
 
     books_mapping = {
         CropsRadio.sunflower.name: AgroBookSunflower,
-        CropsRadio.rapeseed.name: AgroBookRapeSeed
+        CropsRadio.rapeseed.name: AgroBookRapeSeed,
+        CropsRadio.corn.name: CornBook
     }
 
     book = books_mapping.get(crops)

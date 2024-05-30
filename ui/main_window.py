@@ -279,7 +279,6 @@ class AgroMainWindow(QWidget):
         radio_corn = QRadioButton(CropsRadio.corn.value)
         radio_corn.setProperty('name', CropsRadio.corn.name)
         radio_corn.setProperty('class', 'radio_corn')
-        radio_corn.setDisabled(True)
 
         self.crops_group.addButton(radio_sunflower)
         self.crops_group.addButton(radio_rapeseed)

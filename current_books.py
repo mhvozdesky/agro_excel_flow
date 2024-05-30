@@ -1,4 +1,5 @@
 import sys
+from collections import defaultdict
 from openpyxl import Workbook, load_workbook
 from styles import Styles
 
@@ -32,7 +33,13 @@ class BaseBook:
         'Тип досліду\n(Demo/SBS/Strip)': {'type': 'simple', 'width': 15.33},
         'Ширина\nміжряддя': {'type': 'simple', 'width': 16.63},
         'Ширина\nділянки': {'type': 'simple', 'width': 16.63},
-        'Коментарі': {'type': 'handle', 'width': 35.20}
+        'Коментарі': {'type': 'handle', 'width': 35.20},
+        'БР': {'type': 'handle', 'width': 8.27},
+        'Рік': {'type': 'simple', 'width': 9.37},
+        'ФАО': {'type': 'handle', 'width': 20.47},
+        'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': {'type': 'simple', 'width': 15.20},
+        'Коеф. урож SY': {'type': 'handle', 'width': 15.20},
+        'Коеф. урож SY+конк.': {'type': 'handle', 'width': 15.20},
     }
 
     def __init__(self, file_path=None):
@@ -172,24 +179,6 @@ class BaseBook:
     def calculate_the_area_by_formula(self):
         pass
 
-
-class OilSeedCropBook(BaseBook):
-    def state(self, row_dict):
-        rel_col = 'State'
-        value = row_dict.get(rel_col, '')
-        if value is None:
-            return None
-        return value.replace('область', '').strip()
-
-    def household(self, row_dict):
-        value_row = row_dict.get('Custom trial name', '')
-        if value_row is None:
-            return None
-        value = value_row.split(',')
-        if len(value) >= 4:
-            return value[3]
-        return value_row
-
     def format_coordinates(self, coordinate):
         if coordinate is None:
             return ''
@@ -209,6 +198,27 @@ class OilSeedCropBook(BaseBook):
             return None
 
         return f'{latitude},{longitude}'
+
+    def process_input_ws(self, *args, **kwargs):
+        pass
+
+
+class OilSeedCropBook(BaseBook):
+    def state(self, row_dict):
+        rel_col = 'State'
+        value = row_dict.get(rel_col, '')
+        if value is None:
+            return None
+        return value.replace('область', '').strip()
+
+    def household(self, row_dict):
+        value_row = row_dict.get('Custom trial name', '')
+        if value_row is None:
+            return None
+        value = value_row.split(',')
+        if len(value) >= 4:
+            return value[3]
+        return value_row
 
     def get_not_none_value(self, col_name, row_dict):
         value = row_dict.get(col_name, None)
@@ -345,3 +355,130 @@ class AgroBookRapeSeed(OilSeedCropBook):
     def household(self, row_dict):
         value_row = row_dict.get('Custom trial name', None)
         return value_row
+
+
+class CornBook(BaseBook):
+    yield_field = 'YGSMN'
+    company_field = 'Hybrid Company Name'
+
+    def __init__(self, file_path=None):
+        super().__init__(file_path=file_path)
+
+        self.average_yield_sy = None
+        self.average_yield_with_competitors = None
+
+    def init_columns(self):
+        columns = super().init_columns()
+        columns.update({
+            'БР': self.get_column_from_lib('БР', func=None, letter='B'),
+            'Виробник': self.get_column_from_lib('COMPANY', rel_col=self.company_field, letter='C'),
+            'Попередник\n(культура)': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='D'),
+            'Рік': self.get_column_from_lib('Рік', rel_col='Year', letter='E'),
+            'Область': self.get_column_from_lib('Область', func=self.state, letter='F'),
+            'Район': self.get_column_from_lib('Район', func=None, letter='G'),
+            'Локація': self.get_column_from_lib('Господарство', func=self.household, letter='H'),
+            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='I'),
+            'Гібрид': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='J'),
+            'ФАО': self.get_column_from_lib('ФАО', func=None, letter='K'),
+            'Вологість зерна під час збирання %': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='L'),
+            'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': self.get_column_from_lib('Урожайність  (в перерахунку на вологість зерна 14%), ц/га', rel_col=self.yield_field, letter='M'),
+            'Коеф. урож SY': self.get_column_from_lib('Коеф. урож SY', func=self.crop_yield_coefficient_sy, letter='N'),
+            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=self.crop_yield_coefficient_with_competitors, letter='O'),
+            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='P'),
+            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='Q'),
+            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='R'),
+            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='S'),
+        })
+
+        return columns
+
+    def state(self, row_dict):
+        value_row = row_dict.get('State', None)
+        return value_row
+
+    def household(self, row_dict):
+        value_row = row_dict.get('Custom trial name', None)
+        return value_row
+
+    def crop_yield_coefficient_sy(self, row_dict):
+        if self.average_yield_sy is None:
+            return None
+
+        return f'=M{self.num_rows}/{self.average_yield_sy}'
+
+    def crop_yield_coefficient_with_competitors(self, row_dict):
+        if self.average_yield_with_competitors is None:
+            return None
+
+        return f'=M{self.num_rows}/{self.average_yield_with_competitors}'
+
+    def process_input_ws(self, *args, **kwargs):
+        self.average_yield_sy = None
+        self.average_yield_with_competitors = None
+
+        input_ws = kwargs.get('input_ws')
+        columns = kwargs.get('columns')
+
+        if input_ws is None or columns is None:
+            raise ValueError('Неможливо розрахувати середню врожайність. Відсутні input_ws і columns')
+
+        yield_letter = None
+        company_letter = None
+
+        for k, v in columns.items():
+            if v == self.yield_field:
+                yield_letter = k
+
+            if v == self.company_field:
+                company_letter = k
+
+        if yield_letter is None or company_letter is None:
+            raise ValueError('Неможливо розрахувати середню врожайність. Відсутні yield_letter, company_letter')
+
+        self.average_yields(input_ws, yield_letter, company_letter)
+
+    def average_yields(self, input_ws, yield_letter, company_letter):
+        average_dict = defaultdict(list)
+
+        for row_number in range(2, input_ws.max_row + 1):
+
+            yield_value = self.get_yield_value(input_ws, row_number, yield_letter)
+            company_value = self.get_company_value(input_ws, row_number, company_letter)
+            average_dict[company_value].append(yield_value)
+
+        self.average_syngenta(average_dict)
+        self.average_with_competitors(average_dict)
+
+    def average_with_competitors(self, average_dict):
+        keys_list = list(average_dict.keys())
+        list_without_syngenta = list(filter(lambda v: v != 'syngenta', keys_list))
+        if not list_without_syngenta:
+            return
+
+        common_list = []
+        for company, yields_list in average_dict.items():
+            common_list.extend(yields_list)
+
+        average = round(sum(common_list) / len(common_list), 2)
+        self.average_yield_with_competitors = average
+
+    def average_syngenta(self, average_dict):
+        syngenta_list = average_dict.get('syngenta', None)
+        if not syngenta_list:
+            raise ValueError('Неможливо розрахувати середню врожайність. Відсутні врожаї для Syngenta')
+
+        average = round(sum(syngenta_list) / len(syngenta_list), 2)
+        self.average_yield_sy = average
+
+    def get_yield_value(self, input_ws, row_number, yield_letter):
+        try:
+            value = input_ws[f'{yield_letter}{row_number}'].value
+            value = float(value)
+            return value
+        except Exception:
+            return 0.0
+
+    def get_company_value(self, input_ws, row_number, company_letter):
+        value = input_ws[f'{company_letter}{row_number}'].value or ''
+        return value.lower()
+
