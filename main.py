@@ -100,6 +100,9 @@ def main(*, file_list, crops, file_path=None, dir_path=None):
     if file_path is None and dir_path is None:
         raise ValueError("Має бути вказано або ім'я файла або директорія")
 
+    if crops is None:
+        raise ValueError('Ви не вибрали культуру')
+
     books_mapping = {
         CropsRadio.sunflower.name: AgroBookSunflower,
         CropsRadio.rapeseed.name: AgroBookRapeSeed,

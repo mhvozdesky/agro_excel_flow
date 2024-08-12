@@ -270,7 +270,6 @@ class AgroMainWindow(QWidget):
 
         radio_sunflower = QRadioButton(CropsRadio.sunflower.value)
         radio_sunflower.setProperty('name', CropsRadio.sunflower.name)
-        radio_sunflower.setChecked(True)
 
         radio_rapeseed = QRadioButton(CropsRadio.rapeseed.value)
         radio_rapeseed.setProperty('name', CropsRadio.rapeseed.name)
