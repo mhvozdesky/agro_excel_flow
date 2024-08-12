@@ -48,6 +48,21 @@ QPushButton::disabled
 
 }
 
+.no_button
+{
+    background-color: #c52129;
+}
+
+.no_button:hover
+{
+    background-color: #af1f26;
+}
+
+.no_button:pressed
+{
+    background-color: #9b1d23;
+}
+
 /*-----QLineEdit-----*/
 QLineEdit
 {

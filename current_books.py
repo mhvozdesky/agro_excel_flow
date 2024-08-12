@@ -356,6 +356,12 @@ class AgroBookRapeSeed(OilSeedCropBook):
         value_row = row_dict.get('Custom trial name', None)
         return value_row
 
+    def calculate_yield_bunker_weight(self, row_dict):
+        return row_dict.get('USYP', None)
+
+    def yield_recalculation_field_9(self, row_dict):
+        return row_dict.get('USDD', None)
+
 
 class CornBook(BaseBook):
     yield_field = 'YGSMN'
