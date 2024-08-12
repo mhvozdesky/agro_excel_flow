@@ -9,14 +9,14 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QWidget, QPushButton, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout,
     QSizePolicy, QRadioButton, QTextEdit, QButtonGroup, QProgressBar,
-    QSpacerItem, QFrame
+    QSpacerItem, QFrame, QDialog
 )
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.sip import wrappertype
 
-from settings import VERSION
+from settings import VERSION, FILE_NAME
 
 
 NO_FOLDER_SELECTED = 'Папку не вибрано'
@@ -136,6 +136,56 @@ class StreamRedirector:
         pass
 
 
+class CustomDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Обробку даних завершено")
+        self.setModal(True)
+        self.setFixedSize(337, 157)
+
+        main_layout = QVBoxLayout()
+
+        layout_label = QVBoxLayout()
+        layout_button = QHBoxLayout()
+
+        if parent.file_path is not None:
+            text = f'Оновлено файл {FILE_NAME}.'
+        else:
+            text = f'Створено новий файл {FILE_NAME}.'
+            
+        label = QLabel(f"{text}\nБажаєте відкрити папку з файлом?")
+        layout_label.addWidget(label)
+
+        yes_button = QPushButton('Так')
+        yes_button.setFixedSize(90, 25)
+        yes_button.setProperty('class', 'yes_button')
+        yes_button.clicked.connect(self.yes_choice)
+
+        no_button = QPushButton('Ні')
+        no_button.setFixedSize(90, 25)
+        no_button.setProperty('class', 'no_button')
+        no_button.clicked.connect(self.no_choice)
+
+        spacer_item_1 = AgroMainWindow.get_spacer_item_h()
+        spacer_item_2 = AgroMainWindow.get_spacer_item_h()
+
+        layout_button.addItem(spacer_item_1)
+        layout_button.addWidget(yes_button)
+        layout_button.addWidget(no_button)
+        layout_button.addItem(spacer_item_2)
+
+        main_layout.addLayout(layout_label)
+        main_layout.addLayout(layout_button)
+
+        self.setLayout(main_layout)
+
+    def yes_choice(self):
+        self.accept()
+
+    def no_choice(self):
+        self.reject()
+
+
 class AgroMainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -196,6 +246,28 @@ class AgroMainWindow(QWidget):
         self.data_processor = DataProcessor()
         self.init_data_processor()
 
+    def show_confirmation_dialog(self):
+        dialog = CustomDialog(self)
+        result = dialog.exec()
+
+        if result == QDialog.DialogCode.Accepted:
+            self.open_folder_with_file()
+
+    def open_folder_with_file(self):
+        if self.dir_path is not None:
+            folder_path = self.dir_path
+        elif self.file_path is not None:
+            folder_path, custom_file = os.path.split(self.file_path)
+        else:
+            return
+
+        if sys.platform == "win32":
+            os.startfile(folder_path)
+        elif sys.platform == "darwin":
+            os.system(f"open {folder_path}")
+        else:
+            os.system(f"xdg-open {folder_path}")
+
     def get_spacer_item_v(self):
         spacer_item_v = QSpacerItem(
             20,
@@ -205,7 +277,8 @@ class AgroMainWindow(QWidget):
         )
         return spacer_item_v
 
-    def get_spacer_item_h(self):
+    @staticmethod
+    def get_spacer_item_h():
         spacer_item_h = QtWidgets.QSpacerItem(
             40,
             20,
@@ -526,6 +599,7 @@ class AgroMainWindow(QWidget):
             self.logs_stream.write_special_text(value, QtGui.QColor(209, 30, 30))
         elif type_msg == 'success':
             self.logs_stream.write_special_text(value, QtGui.QColor(28, 119, 39))
+            self.show_confirmation_dialog()
 
     def update_progress(self, value):
         self.progressBar.setValue(value)
