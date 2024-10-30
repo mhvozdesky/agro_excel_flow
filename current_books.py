@@ -254,7 +254,7 @@ class OilSeedCropBook(BaseBook):
         return f'=M{self.num_rows}/(L{self.num_rows}*100)'
 
     def yield_recalculation_field_7(self, row_dict):
-        return f'=N{self.num_rows}*((100-O{self.num_rows})/93)'
+        return row_dict.get('YGSMN7', None)
 
     def yield_recalculation_field_8(self, row_dict):
         return f'=N{self.num_rows}*((100-O{self.num_rows})/92)'
