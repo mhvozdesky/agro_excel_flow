@@ -1,6 +1,9 @@
 import sys
+import sqlite3
 from collections import defaultdict
 from copy import deepcopy
+from pathlib import Path
+
 from openpyxl import Workbook, load_workbook
 from styles import Styles
 
@@ -10,6 +13,8 @@ class BaseBook:
     column_lib = {
         'Область': {'type': 'handle', 'width': 19.35},
         'Район': {'type': 'simple', 'width': 17.36},
+        'Район (старий)': {'type': 'handle', 'width': 17.36},
+        'Район (новий)': {'type': 'handle', 'width': 17.36},
         'Господарство': {'type': 'handle', 'width': 22.80},
         'GPS-координати поля': {'type': 'handle', 'width': 28.53},
         'COMPANY': {'type': 'simple', 'width': 15.41},
@@ -42,6 +47,7 @@ class BaseBook:
         'Коеф. урож SY': {'type': 'handle', 'width': 15.20},
         'Коеф. урож SY+конк.': {'type': 'handle', 'width': 15.20},
     }
+    postindex_mapping = None
 
     def __init__(self, file_path=None):
         self.wb = None
@@ -203,6 +209,72 @@ class BaseBook:
     def process_input_ws(self, *args, **kwargs):
         pass
 
+    def get_application_path(self):
+        if getattr(sys, 'frozen', False):
+            return Path(sys._MEIPASS)
+        return Path(__file__).resolve().parent
+
+    def get_postindex_db_path(self):
+        return self.get_application_path() / 'data' / 'postindex.sqlite'
+
+    def get_postindex_mapping(self):
+        if BaseBook.postindex_mapping is not None:
+            return BaseBook.postindex_mapping
+
+        db_path = self.get_postindex_db_path()
+        if not db_path.exists():
+            raise FileNotFoundError(f'Не знайдено файл довідника поштових індексів {db_path}')
+
+        mapping = {}
+        with sqlite3.connect(db_path) as connection:
+            cursor = connection.execute(
+                """
+                SELECT postal_code, district_old_uk, district_new_uk
+                FROM postal_code_map
+                """
+            )
+            for postal_code, district_old_uk, district_new_uk in cursor:
+                mapping[postal_code] = {
+                    'district_old_uk': district_old_uk,
+                    'district_new_uk': district_new_uk,
+                }
+
+        BaseBook.postindex_mapping = mapping
+        return BaseBook.postindex_mapping
+
+    def normalize_postal_code(self, value):
+        if value is None:
+            return None
+
+        if isinstance(value, int):
+            postal_code = str(value)
+        elif isinstance(value, float) and value.is_integer():
+            postal_code = str(int(value))
+        else:
+            postal_code = str(value).replace(' ', '').strip()
+            if postal_code.endswith('.0'):
+                postal_code = postal_code[:-2]
+
+        if not postal_code.isdigit() or len(postal_code) > 5:
+            return None
+
+        return postal_code.zfill(5)
+
+    def get_district_data_by_postal_code(self, row_dict):
+        postal_code = self.normalize_postal_code(row_dict.get('Postal Code', None))
+        if postal_code is None:
+            return {}
+
+        return self.get_postindex_mapping().get(postal_code, {})
+
+    def old_district_by_postal_code(self, row_dict):
+        district_data = self.get_district_data_by_postal_code(row_dict)
+        return district_data.get('district_old_uk') or None
+
+    def new_district_by_postal_code(self, row_dict):
+        district_data = self.get_district_data_by_postal_code(row_dict)
+        return district_data.get('district_new_uk') or None
+
 
 class OilSeedCropBook(BaseBook):
     def state(self, row_dict):
@@ -252,13 +324,13 @@ class OilSeedCropBook(BaseBook):
         return area
 
     def yield_bunker_weight_field(self, row_dict):
-        return f'=N{self.num_rows}/(M{self.num_rows}*100)'
+        return f'=O{self.num_rows}/(N{self.num_rows}*100)'
 
     def yield_recalculation_field_7(self, row_dict):
         return row_dict.get('YGSMN7', None)
 
     def yield_recalculation_field_8(self, row_dict):
-        return f'=O{self.num_rows}*((100-P{self.num_rows})/92)'
+        return f'=P{self.num_rows}*((100-Q{self.num_rows})/92)'
 
     def calculate_yield_bunker_weight(self, row_dict):
         return f'=Q{self.num_rows}/(P{self.num_rows}*100)'
@@ -280,35 +352,36 @@ class AgroBookSunflower(OilSeedCropBook):
 
         columns.update({
             'Область': self.get_column_from_lib('Область', func=self.state, letter='B'),
-            'Район': self.get_column_from_lib('Район', rel_col='City', letter='C'),
-            'Господарство': self.get_column_from_lib('Господарство', rel_col='SFDC Account', letter='D'),
-            'Назва досліду': self.get_column_from_lib('Назва досліду', rel_col='Custom trial name', letter='E'),
-            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='F'),
-            'COMPANY': self.get_column_from_lib('COMPANY', rel_col='Hybrid Company Name', letter='G'),
-            'HYBRIDS': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='H'),
-            'Обробіток грунту': self.get_column_from_lib('Обробіток грунту', rel_col='PTL_C', letter='I'),
-            'Густота на момент\nзбирання, тис/га': self.get_column_from_lib('Густота на момент\nзбирання, тис/га', rel_col='HAVPN', letter='J'),
-            'Кіл-ть\nрядків': self.get_column_from_lib('Кіл-ть\nрядків', rel_col='Number of rows', letter='K'),
-            'Довжина\nділянки': self.get_column_from_lib('Довжина\nділянки', rel_col='Plot Length', letter='L'),
-            'Площа, га': self.get_column_from_lib('Площа, га', func=self.area_hectares, letter='M'),
-            'Вага з\nділянки, кг': self.get_column_from_lib('Вага з\nділянки, кг', rel_col='GWTPN', letter='N'),
-            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': self.get_column_from_lib('YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага', func=self.yield_bunker_weight_field, letter='O'),
-            'Harvesting moisture,\n% Вологість': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='P'),
-            'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (7 %) (UA)', func=self.yield_recalculation_field_7, letter='Q'),
-            'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (8 %) (F)', func=self.yield_recalculation_field_8, letter='R'),
-            'Попередник': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='S'),
-            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='T'),
-            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='U'),
-            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='V'),
-            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='W'),
-            'Ширина\nміжряддя': self.get_column_from_lib('Ширина\nміжряддя', rel_col='Row spacing', letter='X'),
-            'Коментарі': self.get_column_from_lib('Коментарі', func=None, letter='Y')
+            'Район (старий)': self.get_column_from_lib('Район (старий)', func=self.old_district_by_postal_code, letter='C'),
+            'Район (новий)': self.get_column_from_lib('Район (новий)', func=self.new_district_by_postal_code, letter='D'),
+            'Господарство': self.get_column_from_lib('Господарство', rel_col='SFDC Account', letter='E'),
+            'Назва досліду': self.get_column_from_lib('Назва досліду', rel_col='Custom trial name', letter='F'),
+            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='G'),
+            'COMPANY': self.get_column_from_lib('COMPANY', rel_col='Hybrid Company Name', letter='H'),
+            'HYBRIDS': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='I'),
+            'Обробіток грунту': self.get_column_from_lib('Обробіток грунту', rel_col='PTL_C', letter='J'),
+            'Густота на момент\nзбирання, тис/га': self.get_column_from_lib('Густота на момент\nзбирання, тис/га', rel_col='HAVPN', letter='K'),
+            'Кіл-ть\nрядків': self.get_column_from_lib('Кіл-ть\nрядків', rel_col='Number of rows', letter='L'),
+            'Довжина\nділянки': self.get_column_from_lib('Довжина\nділянки', rel_col='Plot Length', letter='M'),
+            'Площа, га': self.get_column_from_lib('Площа, га', func=self.area_hectares, letter='N'),
+            'Вага з\nділянки, кг': self.get_column_from_lib('Вага з\nділянки, кг', rel_col='GWTPN', letter='O'),
+            'YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага': self.get_column_from_lib('YIELD,\nBUNKER WEIGHT (q/ha)\nБункерна вага', func=self.yield_bunker_weight_field, letter='P'),
+            'Harvesting moisture,\n% Вологість': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='Q'),
+            'Re-calculation\nof yield at basis\nmoisture (7 %) (UA)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (7 %) (UA)', func=self.yield_recalculation_field_7, letter='R'),
+            'Re-calculation\nof yield at basis\nmoisture (8 %) (F)': self.get_column_from_lib('Re-calculation\nof yield at basis\nmoisture (8 %) (F)', func=self.yield_recalculation_field_8, letter='S'),
+            'Попередник': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='T'),
+            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='U'),
+            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='V'),
+            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='W'),
+            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='X'),
+            'Ширина\nміжряддя': self.get_column_from_lib('Ширина\nміжряддя', rel_col='Row spacing', letter='Y'),
+            'Коментарі': self.get_column_from_lib('Коментарі', func=None, letter='Z')
         })
 
         return columns
 
     def calculate_the_area_by_formula(self):
-        return f'=K{self.num_rows}*0.7*L{self.num_rows}/10000'
+        return f'=L{self.num_rows}*0.7*M{self.num_rows}/10000'
 
 
 class AgroBookRapeSeed(OilSeedCropBook):
@@ -390,19 +463,20 @@ class CornBook(BaseBook):
             'Попередник\n(культура)': self.get_column_from_lib('Попередник', rel_col='Previous Crop', letter='D'),
             'Рік': self.get_column_from_lib('Рік', rel_col='Year', letter='E'),
             'Область': self.get_column_from_lib('Область', func=self.state, letter='F'),
-            'Район': self.get_column_from_lib('Район', func=None, letter='G'),
-            'Локація': self.get_column_from_lib('Господарство', func=self.household, letter='H'),
-            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='I'),
-            'Гібрид': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='J'),
-            'ФАО': self.get_column_from_lib('ФАО', func=None, letter='K'),
-            'Вологість зерна під час збирання %': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='L'),
-            'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': self.get_column_from_lib('Урожайність  (в перерахунку на вологість зерна 14%), ц/га', rel_col=self.yield_field, letter='M'),
-            'Коеф. урож SY': self.get_column_from_lib('Коеф. урож SY', func=self.crop_yield_coefficient_sy, letter='N'),
-            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=self.crop_yield_coefficient_with_competitors, letter='O'),
-            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='P'),
-            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='Q'),
-            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='R'),
-            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='S'),
+            'Район (старий)': self.get_column_from_lib('Район (старий)', func=self.old_district_by_postal_code, letter='G'),
+            'Район (новий)': self.get_column_from_lib('Район (новий)', func=self.new_district_by_postal_code, letter='H'),
+            'Локація': self.get_column_from_lib('Господарство', func=self.household, letter='I'),
+            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='J'),
+            'Гібрид': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='K'),
+            'ФАО': self.get_column_from_lib('ФАО', func=None, letter='L'),
+            'Вологість зерна під час збирання %': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='M'),
+            'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': self.get_column_from_lib('Урожайність  (в перерахунку на вологість зерна 14%), ц/га', rel_col=self.yield_field, letter='N'),
+            'Коеф. урож SY': self.get_column_from_lib('Коеф. урож SY', func=self.crop_yield_coefficient_sy, letter='O'),
+            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=self.crop_yield_coefficient_with_competitors, letter='P'),
+            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='Q'),
+            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='R'),
+            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='S'),
+            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='T'),
         })
 
         return columns
@@ -419,13 +493,13 @@ class CornBook(BaseBook):
         if self.average_yield_sy is None:
             return None
 
-        return f'=M{self.num_rows}/{self.average_yield_sy}'
+        return f'=N{self.num_rows}/{self.average_yield_sy}'
 
     def crop_yield_coefficient_with_competitors(self, row_dict):
         if self.average_yield_with_competitors is None:
             return None
 
-        return f'=M{self.num_rows}/{self.average_yield_with_competitors}'
+        return f'=N{self.num_rows}/{self.average_yield_with_competitors}'
 
     def process_input_ws(self, *args, **kwargs):
         self.average_yield_sy = None
