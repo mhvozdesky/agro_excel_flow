@@ -142,8 +142,23 @@ class BaseBook:
     def row_to_dict(self, row, column):
         row_dict = {}
         for cell in row:
-            row_dict[column[cell.column_letter]] = cell.value
+            column_name = column[cell.column_letter]
+            value = cell.value
+
+            if column_name in row_dict and not self.is_empty_value(row_dict[column_name]):
+                continue
+
+            row_dict[column_name] = value
         return row_dict
+
+    def is_empty_value(self, value):
+        if value is None:
+            return True
+
+        if isinstance(value, str) and value.strip() == '':
+            return True
+
+        return False
 
     def write_data(self, row_dict):
         self.num_rows += 1
@@ -446,6 +461,12 @@ class AgroBookRapeSeed(OilSeedCropBook):
 
 
 class CornBook(BaseBook):
+    column_lib = deepcopy(BaseBook.column_lib)
+    column_lib['Локація'] = {
+        'type': 'handle',
+        'width': column_lib['Господарство']['width']
+    }
+
     yield_field = 'YGSMN'
     company_field = 'Hybrid Company Name'
 
@@ -457,6 +478,9 @@ class CornBook(BaseBook):
 
     def init_columns(self):
         columns = super().init_columns()
+        tillage = self.get_column_from_lib('Обробіток грунту', rel_col='Tillage', letter='T')
+        tillage['width'] = 16.71
+
         columns.update({
             'БР': self.get_column_from_lib('БР', func=None, letter='B'),
             'Виробник': self.get_column_from_lib('COMPANY', rel_col=self.company_field, letter='C'),
@@ -465,18 +489,20 @@ class CornBook(BaseBook):
             'Область': self.get_column_from_lib('Область', func=self.state, letter='F'),
             'Район (старий)': self.get_column_from_lib('Район (старий)', func=self.old_district_by_postal_code, letter='G'),
             'Район (новий)': self.get_column_from_lib('Район (новий)', func=self.new_district_by_postal_code, letter='H'),
-            'Локація': self.get_column_from_lib('Господарство', func=self.household, letter='I'),
-            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='J'),
-            'Гібрид': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='K'),
-            'ФАО': self.get_column_from_lib('ФАО', func=None, letter='L'),
-            'Вологість зерна під час збирання %': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='M'),
-            'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': self.get_column_from_lib('Урожайність  (в перерахунку на вологість зерна 14%), ц/га', rel_col=self.yield_field, letter='N'),
-            'Коеф. урож SY': self.get_column_from_lib('Коеф. урож SY', func=self.crop_yield_coefficient_sy, letter='O'),
-            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=self.crop_yield_coefficient_with_competitors, letter='P'),
-            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='Q'),
-            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='R'),
-            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='S'),
-            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='T'),
+            'Господарство': self.get_column_from_lib('Господарство', func=self.sfdc_account, letter='I'),
+            'Локація': self.get_column_from_lib('Локація', func=self.household, letter='J'),
+            'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='K'),
+            'Гібрид': self.get_column_from_lib('HYBRIDS', rel_col='Hybrid Name', letter='L'),
+            'ФАО': self.get_column_from_lib('ФАО', func=None, letter='M'),
+            'Вологість зерна під час збирання %': self.get_column_from_lib('Harvesting moisture,\n% Вологість', rel_col='GMSTP', letter='N'),
+            'Урожайність  (в перерахунку на вологість зерна 14%), ц/га': self.get_column_from_lib('Урожайність  (в перерахунку на вологість зерна 14%), ц/га', rel_col=self.yield_field, letter='O'),
+            'Коеф. урож SY': self.get_column_from_lib('Коеф. урож SY', func=self.crop_yield_coefficient_sy, letter='P'),
+            'Коеф. урож SY+конк.': self.get_column_from_lib('Коеф. урож SY+конк.', func=self.crop_yield_coefficient_with_competitors, letter='Q'),
+            'Дата посіву': self.get_column_from_lib('Дата посіву', rel_col='Date of Planting', letter='R'),
+            'Дата збирання': self.get_column_from_lib('Дата збирання', rel_col='Date of Harvest', letter='S'),
+            'Обробіток грунту': tillage,
+            'ПІБ менеджера,\nщо створив протокол': self.get_column_from_lib('ПІБ менеджера,\nщо створив протокол', rel_col='Username', letter='U'),
+            'Тип досліду\n(Demo/SBS/Strip)': self.get_column_from_lib('Тип досліду\n(Demo/SBS/Strip)', rel_col='Trial type', letter='V'),
         })
 
         return columns
@@ -489,17 +515,21 @@ class CornBook(BaseBook):
         value_row = row_dict.get('Custom trial name', None)
         return value_row
 
+    def sfdc_account(self, row_dict):
+        value_row = row_dict.get('SFDC Account', None)
+        return value_row
+
     def crop_yield_coefficient_sy(self, row_dict):
         if self.average_yield_sy is None:
             return None
 
-        return f'=N{self.num_rows}/{self.average_yield_sy}'
+        return f'=O{self.num_rows}/{self.average_yield_sy}'
 
     def crop_yield_coefficient_with_competitors(self, row_dict):
         if self.average_yield_with_competitors is None:
             return None
 
-        return f'=N{self.num_rows}/{self.average_yield_with_competitors}'
+        return f'=O{self.num_rows}/{self.average_yield_with_competitors}'
 
     def process_input_ws(self, *args, **kwargs):
         self.average_yield_sy = None
