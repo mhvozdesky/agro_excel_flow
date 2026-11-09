@@ -244,12 +244,13 @@ class BaseBook:
         with sqlite3.connect(db_path) as connection:
             cursor = connection.execute(
                 """
-                SELECT postal_code, district_old_uk, district_new_uk
+                SELECT postal_code, region_uk, district_old_uk, district_new_uk
                 FROM postal_code_map
                 """
             )
-            for postal_code, district_old_uk, district_new_uk in cursor:
+            for postal_code, region_uk, district_old_uk, district_new_uk in cursor:
                 mapping[postal_code] = {
+                    'region_uk': region_uk,
                     'district_old_uk': district_old_uk,
                     'district_new_uk': district_new_uk,
                 }
@@ -282,6 +283,10 @@ class BaseBook:
 
         return self.get_postindex_mapping().get(postal_code, {})
 
+    def region_by_postal_code(self, row_dict):
+        district_data = self.get_district_data_by_postal_code(row_dict)
+        return district_data.get('region_uk') or None
+
     def old_district_by_postal_code(self, row_dict):
         district_data = self.get_district_data_by_postal_code(row_dict)
         return district_data.get('district_old_uk') or None
@@ -293,10 +298,10 @@ class BaseBook:
 
 class OilSeedCropBook(BaseBook):
     def state(self, row_dict):
-        rel_col = 'State'
-        value = row_dict.get(rel_col, '')
-        if value is None:
-            return None
+        value = row_dict.get('State', None)
+        if self.is_empty_value(value):
+            # fallback: region by postal code, otherwise the raw location name
+            return self.region_by_postal_code(row_dict) or row_dict.get('Location name', None)
         return value.replace('область', '').strip()
 
     def household(self, row_dict):
@@ -356,7 +361,6 @@ class OilSeedCropBook(BaseBook):
 
 class AgroBookSunflower(OilSeedCropBook):
     column_lib = deepcopy(BaseBook.column_lib)
-    column_lib['Господарство']['type'] = 'simple'
     column_lib['Назва досліду'] = {
         'type': 'simple',
         'width': column_lib['Господарство']['width']
@@ -369,7 +373,7 @@ class AgroBookSunflower(OilSeedCropBook):
             'Область': self.get_column_from_lib('Область', func=self.state, letter='B'),
             'Район (старий)': self.get_column_from_lib('Район (старий)', func=self.old_district_by_postal_code, letter='C'),
             'Район (новий)': self.get_column_from_lib('Район (новий)', func=self.new_district_by_postal_code, letter='D'),
-            'Господарство': self.get_column_from_lib('Господарство', rel_col='SFDC Account', letter='E'),
+            'Господарство': self.get_column_from_lib('Господарство', func=self.household, letter='E'),
             'Назва досліду': self.get_column_from_lib('Назва досліду', rel_col='Custom trial name', letter='F'),
             'GPS-координати поля': self.get_column_from_lib('GPS-координати поля', func=self.gps_coordinates, letter='G'),
             'COMPANY': self.get_column_from_lib('COMPANY', rel_col='Hybrid Company Name', letter='H'),
@@ -397,6 +401,12 @@ class AgroBookSunflower(OilSeedCropBook):
 
     def calculate_the_area_by_formula(self):
         return f'=L{self.num_rows}*0.7*M{self.num_rows}/10000'
+
+    def household(self, row_dict):
+        value = row_dict.get('SFDC Account', None)
+        if self.is_empty_value(value):
+            return row_dict.get('Custom trial name', None)
+        return value
 
 
 class AgroBookRapeSeed(OilSeedCropBook):
